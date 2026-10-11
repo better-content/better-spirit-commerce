@@ -1,5 +1,11 @@
 # Better Spirit Commerce
 
+## Scope and authority
+
+This repository owns its mod-specific behavior and authoring inputs. Read [local instructions](AGENTS.md)
+and the [shared documentation/policy index](../../better-content-modpack/docs/README.md).
+
+
 Forge 1.20.1 mod making Malum spirits the pack's player-effort currency and village identity system.
 
 - Commerce uses sacred, wicked, arcane, aerial, aqueous, earthen, and infernal spirits. Eldritch and umbral spirits retain their special Malum roles and never appear in trade.

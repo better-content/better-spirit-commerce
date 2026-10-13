@@ -56,6 +56,10 @@ public final class CampVisualHarness {
         event.getDispatcher().register(Commands.literal("campvisual").requires(source -> source.hasPermission(2))
                 .then(Commands.literal("prepare").then(Commands.argument("player", EntityArgument.player())
                         .executes(context -> prepare(EntityArgument.getPlayer(context, "player")))))
+                .then(Commands.literal("scene").then(Commands.argument("player", EntityArgument.player())
+                        .then(Commands.argument("variant", StringArgumentType.word()).executes(context -> scene(
+                                EntityArgument.getPlayer(context, "player"),
+                                StringArgumentType.getString(context, "variant"))))))
                 .then(Commands.literal("view").then(Commands.argument("player", EntityArgument.player())
                         .then(Commands.argument("angle", StringArgumentType.word()).executes(context -> view(
                                 EntityArgument.getPlayer(context, "player"),
@@ -73,18 +77,30 @@ public final class CampVisualHarness {
 
     @SubscribeEvent
     public void residentVisualTick(TickEvent.ServerTickEvent event) {
-        ResidentVisualHarness.autoTick(event);
+        // A prepared camp review owns the camera; resident auto-scenes must not replace it.
+        if (origin == null) ResidentVisualHarness.autoTick(event);
     }
 
     private static int prepare(final ServerPlayer player) {
+        return scene(player, "day");
+    }
+
+    private static int scene(final ServerPlayer player, final String variant) {
+        if (!List.of("day", "night", "facings", "uneven").contains(variant)) return 0;
         ServerLevel level = player.serverLevel();
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
             player.sendSystemMessage(Component.literal("Run campvisual from the Overworld."));
             return 0;
         }
-        floorY = Math.max(level.getMinBuildHeight() + 8, player.blockPosition().getY() - 1);
-        origin = new BlockPos(player.blockPosition().getX() - 8, floorY + 1,
-                player.blockPosition().getZ() - 18);
+        // Identical authored scene coordinates for baseline/candidate and repeated views.
+        floorY = 80;
+        origin = new BlockPos(0, floorY + 1, 0);
+        level.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_DAYLIGHT).set(false, level.getServer());
+        level.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_WEATHER_CYCLE).set(false, level.getServer());
+        level.setDayTime(variant.equals("night") ? 18000L : 6000L);
+        level.setWeatherParameters(100000, 0, false, false);
+        for (WanderingTrader trader : level.getEntitiesOfClass(WanderingTrader.class,
+                new net.minecraft.world.phys.AABB(origin).inflate(35))) trader.discard();
         for (int x = -2; x <= 19; x++) {
             for (int z = -2; z <= 23; z++) {
                 BlockPos floor = origin.offset(x, -1, z);
@@ -101,13 +117,28 @@ public final class CampVisualHarness {
             double z = origin.getZ() + 4.0D + row * 8.0D;
             WanderingTrader trader = EntityType.WANDERING_TRADER.create(level);
             if (trader == null) continue;
-            trader.moveTo(x, origin.getY(), z, 180.0F, 0.0F);
+            Direction facing = variant.equals("facings")
+                    ? List.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST).get(column)
+                    : Direction.NORTH;
+            int rise = variant.equals("uneven") ? index % 2 : 0;
+            int traderY = origin.getY() + rise;
+            if (rise > 0) {
+                for (int dx = -1; dx <= 1; dx++) for (int dz = -2; dz <= 3; dz++) {
+                    level.setBlock(new BlockPos((int) x + dx, floorY + 1, (int) z + dz),
+                            Blocks.GRASS_BLOCK.defaultBlockState(), 3);
+                }
+            }
+            trader.moveTo(x, traderY, z, facing.toYRot(), 0.0F);
             level.addFreshEntity(trader);
             WanderingTraderVisits.applyTheme(trader, themes[index], true);
             if (TraderCampService.createForVisit(trader, themes[index])) {
                 BlockPos target = BlockPos.of(trader.getPersistentData()
-                        .getLong("better_spirit_commerce:camp_pos")).relative(Direction.NORTH);
-                trader.moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, 180.0F, 0.0F);
+                        .getLong("better_spirit_commerce:camp_pos")).relative(facing);
+                trader.moveTo(target.getX() + 0.5D, target.getY(), target.getZ() + 0.5D, facing.toYRot(), 0.0F);
+                System.out.println("CAMP_VISUAL fixture theme=" + themes[index].id() + " facing=" + facing
+                        + " post=" + target.relative(facing.getOpposite()) + " trader=" + target);
+            } else {
+                throw new IllegalStateException("Camp fixture placement failed for " + themes[index].id());
             }
             trader.setNoAi(true);
         }
@@ -129,19 +160,27 @@ public final class CampVisualHarness {
         float pitch;
         switch (angle) {
             case "profile" -> {
-                x = origin.getX() - 6.5D; y = floorY + 3.8D; z = origin.getZ() + 9.0D;
-                yaw = 270.0F; pitch = 8.0F;
+                x = origin.getX() - 4.5D; y = floorY + 1.0D; z = origin.getZ() + 5.0D;
+                yaw = 270.0F; pitch = -5.0F;
             }
             case "detail" -> {
-                x = origin.getX() + 2.0D; y = floorY + 3.4D; z = origin.getZ() + 12.0D;
-                yaw = 180.0F; pitch = 12.0F;
+                x = origin.getX() + 0.2D; y = floorY + 1.5D; z = origin.getZ() + 2.0D;
+                yaw = -30.0F; pitch = -8.0F;
+            }
+            case "front" -> {
+                x = origin.getX() + 2.5D; y = floorY + 1.0D; z = origin.getZ() + 0.5D;
+                yaw = 0.0F; pitch = -6.0F;
+            }
+            case "distant" -> {
+                x = origin.getX() + 6.0D; y = floorY + 12.0D; z = origin.getZ() + 45.0D;
+                yaw = 180.0F; pitch = 16.0F;
             }
             case "overview" -> {
                 x = origin.getX() + 6.0D; y = floorY + 9.0D; z = origin.getZ() + 25.0D;
                 yaw = 180.0F; pitch = 23.0F;
             }
             default -> {
-                player.sendSystemMessage(Component.literal("Angles: overview, profile, detail."));
+                player.sendSystemMessage(Component.literal("Angles: overview, profile, front, detail, distant."));
                 return 0;
             }
         }
@@ -151,9 +190,8 @@ public final class CampVisualHarness {
     }
 
     private static int capture(final ServerPlayer player, final String name) {
-        List<String> names = List.of("camps-overview", "awning-profile", "awning-detail");
-        if (!names.contains(name)) {
-            player.sendSystemMessage(Component.literal("Capture names: camps-overview, awning-profile, awning-detail."));
+        if (!name.matches("[a-z0-9-]{1,60}")) {
+            player.sendSystemMessage(Component.literal("Capture name must use lowercase letters, digits and hyphens (max 60)."));
             return 0;
         }
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new CapturePacket(name));

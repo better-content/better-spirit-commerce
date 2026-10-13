@@ -81,6 +81,12 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
                 ? WanderingTraderTheme.forUuid(trader.getUUID()) : WanderingTraderTheme.fromId(themeId));
     }
 
+    @Override
+    public AABB getRenderBoundingBox() {
+        // Forge's default box follows the one-block collision mast, not the rendered canopy.
+        return renderBounds(worldPosition);
+    }
+
     public static AABB renderBounds(final BlockPos pos) {
         return new AABB(pos).inflate(2.2D, 2.2D, 2.2D);
     }

@@ -21,7 +21,10 @@ public final class CampVisualScreenshot {
             MinecraftForge.EVENT_BUS.register(CampVisualScreenshot.class);
             installed = true;
         }
-        Minecraft.getInstance().options.hideGui = true;
+        Minecraft minecraft = Minecraft.getInstance();
+        // Typed harness operation, not simulated Escape/pointer input. Review the world framebuffer.
+        minecraft.setScreen(null);
+        minecraft.options.hideGui = true;
         pending = name + ".png";
         settleTicks = 0;
     }

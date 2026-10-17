@@ -26,6 +26,10 @@ TARGETS = {
     'slimeknights.tconstruct.tables.menu.PartBuilderContainerMenu$PatternSlot': ('tconstruct', 'tconstruct.PartBuilderPatternSlotPlacementMixin', 'e9e0006c03c87c0ae29372640b3e58bb06f169fac7269e5a750d333383226f27'),
     'com.ferreusveritas.dynamictrees.compat.season.NormalSeasonManager': ('dynamictrees', 'dynamictrees.NormalSeasonManagerMixin', '5805ee0fe52f752c26c2ec48e9a1f0828d837fe706daa0d08241050e7dc36f13'),
 }
+STARTUP_LOGGER = 'better_spirit_commerce.native_startup/'
+STARTUP_MARKER = re.compile(r'SPIRIT_NATIVE_STARTUP_BOUNDARY nonce=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) phase=(START_1|END_1|START_2)')
+STARTUP_PHASES = ('START_1', 'END_1', 'START_2')
+LAG = re.compile(r"Can't keep up! Is the server overloaded\? Running ([1-9][0-9]*)ms or ([1-9][0-9]*) ticks behind")
 ATTRIBUTE = 'dev.shadowsoffire.attributeslib.client.AttributesLibClient'
 SLEEPING = 'github.cosmicdan.sleepingoverhaul.server.ServerState'
 RECORD = re.compile(r'^\[(\d{2}[A-Z][a-z]{2}\d{4} \d{2}:\d{2}:\d{2}\.\d{3})\] \[([^\]\n]+)/([A-Z]+)\] \[([^\]\n]+)\]: (.*)$')
@@ -121,25 +125,77 @@ def classify(thread, logger, message, metadata, config_context):
     return None, config_context
 
 
-def inspect(lines, metadata):
+def performance_record(number, line, message, thread=None, logger=None, level=None, stamp=None):
+    lag = LAG.fullmatch(message)
+    milliseconds = ticks = None
+    try:
+        if lag:
+            milliseconds, ticks = map(int, lag.groups())
+    except ValueError:
+        pass
+    return {'source_line': number, 'source_record': line, 'message': message,
+            'duration_ms': milliseconds, 'ticks': ticks, 'thread': thread,
+            'logger': logger, 'severity': level, 'timestamp': stamp,
+            'accepted': False, '_candidate': False}
+
+
+def inspect(lines, metadata, diagnostics=None):
     if metadata.get('dist') != 'DEDICATED_SERVER':
         raise ValueError('Diagnostics apply only to the dedicated GameTest dev profile')
+    diagnostics = diagnostics if diagnostics is not None else {}
     failures, counts, seen = [], collections.Counter(), set()
     context, previous = None, None
+    markers, notices = [], []
+    boundary_invalid = False
+    nonce = metadata.get('nonce')
     for number, raw in enumerate(lines, 1):
         line = raw.rstrip('\n')
         match = RECORD.fullmatch(line)
         if not match:
+            if "Can't keep up!" in line:
+                notices.append(performance_record(number, line, line[line.index("Can't keep up!"):]))
+                failures.append((number, line))
             if '/WARN]' in line or '/ERROR]' in line or '/FATAL]' in line or previous in ('WARN', 'ERROR', 'FATAL') and line.strip():
                 failures.append((number, line))
+            if 'SPIRIT_NATIVE_STARTUP_BOUNDARY' in line:
+                boundary_invalid = True
+                if (number, line) not in failures:
+                    failures.append((number, line))
             continue
         stamp, thread, level, logger, message = match.groups()
         try:
-            datetime.datetime.strptime(stamp, '%d%b%Y %H:%M:%S.%f')
+            timestamp = datetime.datetime.strptime(stamp, '%d%b%Y %H:%M:%S.%f')
         except ValueError:
+            if message.startswith("Can't keep up!"):
+                notices.append(performance_record(number, line, message, thread, logger, level, stamp))
             failures.append((number, line))
             continue
         previous = level
+        if 'SPIRIT_NATIVE_STARTUP_BOUNDARY' in message or logger == STARTUP_LOGGER:
+            marker = STARTUP_MARKER.fullmatch(message)
+            valid = (marker is not None and marker.group(1) == nonce
+                     and thread == 'Server thread' and level == 'INFO' and logger == STARTUP_LOGGER
+                     and len(markers) < 3 and marker.group(2) == STARTUP_PHASES[len(markers)]
+                     and (not markers or timestamp >= datetime.datetime.strptime(
+                         markers[-1]['timestamp'], '%d%b%Y %H:%M:%S.%f')))
+            if valid:
+                markers.append({'phase': marker.group(2), 'source_line': number,
+                                'message': message, 'timestamp': stamp})
+            else:
+                boundary_invalid = True
+                failures.append((number, line))
+            continue
+        if message.startswith("Can't keep up!"):
+            notice = performance_record(number, line, message, thread, logger, level, stamp)
+            milliseconds, ticks = notice['duration_ms'], notice['ticks']
+            notice['_candidate'] = (milliseconds is not None and ticks is not None
+                         and milliseconds > 0 and ticks > 0 and ticks == milliseconds // 50
+                         and thread == 'Server thread' and level == 'WARN'
+                         and logger == 'net.minecraft.server.MinecraftServer/'
+                         and len(markers) == 2 and not boundary_invalid
+                         and timestamp >= datetime.datetime.strptime(markers[1]['timestamp'], '%d%b%Y %H:%M:%S.%f'))
+            notices.append(notice)
+            continue
         if level in ('TRACE', 'DEBUG', 'INFO'):
             continue
         if level not in ('WARN', 'ERROR', 'FATAL'):
@@ -152,20 +208,53 @@ def inspect(lines, metadata):
         else:
             counts[category] += 1
             seen.add(identity)
+    boundary_valid = not boundary_invalid and len(markers) == 3
+    if not boundary_valid:
+        failures.append((0, 'Missing, reordered, duplicate, or invalid nonce-bound native startup markers'))
+    for notice in notices:
+        accepted = notice.pop('_candidate') and boundary_valid and len(notices) == 1
+        if accepted:
+            accepted = datetime.datetime.strptime(notice['timestamp'], '%d%b%Y %H:%M:%S.%f') <= datetime.datetime.strptime(
+                markers[2]['timestamp'], '%d%b%Y %H:%M:%S.%f')
+        notice['accepted'] = accepted
+        if accepted:
+            counts['native-first-startup-performance'] += 1
+        else:
+            failure = (notice['source_line'], notice['source_record'])
+            if failure not in failures:
+                failures.append(failure)
+    diagnostics.update({
+        'schema': 'better_spirit_commerce.native_diagnostics.v1',
+        'nonce': nonce, 'startup_boundary_valid': boundary_valid, 'startup_markers': markers,
+        'performance_diagnostics': notices, 'classified_counts': dict(counts),
+        'failures': [{'source_line': number, 'record': line} for number, line in failures],
+        'passed': not failures,
+    })
     return failures, dict(counts)
 
 
 def main(log):
-    validate_inputs()
     run = log.parent.parent
-    metadata = json.loads((run / 'native-diagnostic-inputs.json').read_text())
-    if metadata['nonce'] != (run / 'native-diagnostic-nonce').read_text().strip():
-        raise ValueError('Native diagnostic metadata is not from this invocation')
-    failures, counts = inspect(log.read_text().splitlines(keepends=True), metadata)
-    print('Native fixture classified diagnostics:', json.dumps(counts, sort_keys=True))
-    for number, line in failures:
-        print(f'UNCLASSIFIED {number}: {line}', file=sys.stderr)
-    return 1 if failures else 0
+    diagnostics = {'schema': 'better_spirit_commerce.native_diagnostics.v1',
+                   'source_log': str(log.resolve()), 'passed': False,
+                   'performance_diagnostics': []}
+    try:
+        validate_inputs()
+        metadata = json.loads((run / 'native-diagnostic-inputs.json').read_text())
+        if metadata['nonce'] != (run / 'native-diagnostic-nonce').read_text().strip():
+            raise ValueError('Native diagnostic metadata is not from this invocation')
+        failures, counts = inspect(log.read_text().splitlines(keepends=True), metadata, diagnostics)
+        print('Native fixture classified diagnostics:', json.dumps(counts, sort_keys=True))
+        for notice in diagnostics['performance_diagnostics']:
+            print('Native fixture performance diagnostic:', json.dumps(notice, sort_keys=True))
+        for number, line in failures:
+            print(f'UNCLASSIFIED {number}: {line}', file=sys.stderr)
+        return 1 if failures else 0
+    except Exception as error:
+        diagnostics['input_error'] = str(error)
+        raise
+    finally:
+        (run / 'native-diagnostics.json').write_text(json.dumps(diagnostics, indent=2) + '\n')
 
 
 if __name__ == '__main__':

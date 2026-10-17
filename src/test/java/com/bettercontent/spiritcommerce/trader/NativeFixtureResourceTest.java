@@ -72,6 +72,24 @@ final class NativeFixtureResourceTest {
         assertTrue(build.contains("runtimeOnly(fg.deobf(\"curse.maven:jei-238222:7920915\"))"));
     }
 
+    @Test
+    void startupTickEvidenceRemainsInTheNonshippingNativeFixture() throws Exception {
+        String relative = "com/bettercontent/spiritcommerce/nativefixture/StartupTickBoundary";
+        Path source = Path.of("src/nativeFixture/java", relative + ".java");
+        assertTrue(Files.isRegularFile(source));
+        assertFalse(Files.exists(Path.of("src/main/java", relative + ".java")));
+        assertFalse(Files.exists(Path.of("build/classes/java/main", relative + ".class")),
+                "Native evidence markers must never enter the production class output");
+        String code = Files.readString(source);
+        assertTrue(code.contains("forge.gameTestServer") && code.contains("instanceof GameTestServer"));
+        assertTrue(code.contains("TickEvent.ServerTickEvent"));
+        assertTrue(code.contains("mark(\"START_1\")"));
+        assertTrue(code.contains("mark(\"END_1\")"));
+        assertTrue(code.contains("mark(\"START_2\")"));
+        assertTrue(code.contains("native-diagnostic-nonce"));
+        assertTrue(code.contains("UUID.fromString(nonce).toString().equals(nonce)"));
+    }
+
     private static String sha256(final byte[] bytes) throws Exception {
         return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
     }

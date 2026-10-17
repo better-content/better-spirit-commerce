@@ -31,6 +31,7 @@ public final class WanderingTraderVisits {
             applyTheme(trader, WanderingTraderTheme.forUuid(trader.getUUID()), false);
         }
         TraderCampService.restoreOnJoin(trader);
+        if (trader.isRemoved()) event.setCanceled(true);
     }
 
     public static int tickScheduledVisit(
@@ -104,7 +105,7 @@ public final class WanderingTraderVisits {
         }
     }
 
-    private static void announceArrival(
+    static void announceArrival(
             final ServerLevel level,
             final WanderingTrader trader,
             final WanderingTraderTheme theme) {

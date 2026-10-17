@@ -19,6 +19,10 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
     static final String THEME_TAG = "Theme";
     @Nullable private UUID traderId;
     private String themeId = "sacred";
+    private boolean spiritFair;
+    private long fairStart;
+    private long fairEnd;
+    private long fairOccurrence;
 
     public TraderCampPostBlockEntity(final BlockPos pos, final BlockState state) {
         super(TraderCampRegistries.POST_ENTITY.get(), pos, state);
@@ -27,6 +31,10 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
     public void bind(final WanderingTrader trader, final WanderingTraderTheme theme) {
         traderId = trader.getUUID();
         themeId = theme.id();
+        spiritFair = SpiritFairVisits.isFair(trader);
+        fairStart = trader.getPersistentData().getLong(SpiritFairVisits.START_TAG);
+        fairEnd = trader.getPersistentData().getLong(SpiritFairVisits.END_TAG);
+        fairOccurrence = trader.getPersistentData().getLong(SpiritFairVisits.OCCURRENCE_TAG);
         setChangedAndSync();
     }
 
@@ -37,6 +45,12 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
         CompoundTag tag = new CompoundTag();
         if (traderId != null) tag.putUUID(TRADER_TAG, traderId);
         tag.putString(THEME_TAG, themeId);
+        tag.putBoolean("SpiritFair", spiritFair);
+        if (spiritFair) {
+            tag.putLong("FairStart", fairStart);
+            tag.putLong("FairEnd", fairEnd);
+            tag.putLong("FairOccurrence", fairOccurrence);
+        }
         return tag;
     }
 
@@ -51,12 +65,33 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
         super.load(tag);
         traderId = tag.hasUUID(TRADER_TAG) ? tag.getUUID(TRADER_TAG) : null;
         if (tag.contains(THEME_TAG)) themeId = tag.getString(THEME_TAG);
+        spiritFair = tag.getBoolean("SpiritFair");
+        fairStart = tag.getLong("FairStart");
+        fairEnd = tag.getLong("FairEnd");
+        fairOccurrence = tag.getLong("FairOccurrence");
     }
 
     @Override public CompoundTag getUpdateTag() { return saveWithoutMetadata(); }
     @Override public Packet<ClientGamePacketListener> getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
 
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        expireFairIfNeeded();
+    }
+
+    boolean expireFairIfNeeded() {
+        if (!spiritFair || !(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) return false;
+        long time = serverLevel.getServer().overworld().getDayTime();
+        if (time >= fairStart && time < fairEnd && serverLevel.dimension().equals(Level.OVERWORLD)
+                && !SpiritFairVisits.occurrenceEnded(serverLevel, fairOccurrence)
+                && traderId != null && TraderCampData.hasFairVisit(serverLevel, traderId)) return false;
+        serverLevel.setBlock(worldPosition, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+        return true;
+    }
+
     public void retargetLinkedTrader() {
+        if (expireFairIfNeeded()) return;
         if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel) || traderId == null) return;
         if (!serverLevel.dimension().equals(Level.OVERWORLD)) {
             traderId = null;
@@ -65,7 +100,7 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
         }
         Entity entity = serverLevel.getEntity(traderId);
         if (entity == null) {
-            TraderCampData.get(serverLevel).setTarget(traderId,
+            (spiritFair ? TraderCampData.fair(serverLevel, traderId) : TraderCampData.get(serverLevel)).setTarget(traderId,
                     serverLevel.dimension().location().toString(), worldPosition,
                     getBlockState().getValue(TraderCampPostBlock.FACING));
             return;
@@ -76,6 +111,8 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
             setChangedAndSync();
             return;
         }
+        TraderCampData.forTrader(trader).setTarget(traderId, serverLevel.dimension().location().toString(),
+                worldPosition, getBlockState().getValue(TraderCampPostBlock.FACING));
         TraderCampService.retarget(trader, worldPosition, getBlockState().getValue(TraderCampPostBlock.FACING));
         bind(trader, WanderingTraderTheme.fromId(themeId) == null
                 ? WanderingTraderTheme.forUuid(trader.getUUID()) : WanderingTraderTheme.fromId(themeId));

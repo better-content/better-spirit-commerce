@@ -21,6 +21,57 @@ Forge 1.20.1 mod making Malum spirits the pack's player-effort currency and vill
 
 Run `./gradlew verifyFull stageRuntimeJar` before committing or pushing.
 
+## Optional Spirit Fair
+
+When Better Celestial Events is installed, its server-authoritative Spirit Fair night admits one
+**additional** themed wandering trader and camp near a living, non-spectator Overworld player.
+The ordinary trader schedule and village residents are unchanged. The Fair rotates the existing
+themes with its own saved cursor and uses their normal catalogue, prices and finite stock: no
+new currency, discounts, gates or restocking. Both trader-spawning and mob-spawning gamerules
+apply. Searches use already-loaded, collision-free supported terrain and retry at most once per
+1,200 game ticks, including when no eligible player or site exists.
+
+Admission is flushed to saved data before entity insertion; the successful trader UUID is recorded
+separately and only successful insertion advances the theme cursor. A known canceled insertion
+that never entered the world rolls back only its unsucceeded reservation and retains the one-minute
+retry deadline. Death, exhaustion, chunk unload, reconnect and restart cannot grant another visit
+for a successfully admitted occurrence. A crash after durable admission can conservatively lose
+the visit rather than duplicate its stock; it does not advance the theme cursor.
+Fair posts retain independent UUID-keyed relocation targets and occurrence markers alongside the
+ordinary camp. Forced event end/replacement retires old visitors/posts before the next visit can
+spawn. Loaded Fair traders depart at dawn, and unloaded expired traders/posts expire on joining
+again. If the optional provider is removed, saved visitors still expire at their original dawn.
+
+Compilation requires the canonical `better-celestial-events-0.1.0.jar`, resolved from
+`BC_CUSTOM_MOD_JAR_DIR` or the sibling provider's `build/libs/`; it is not bundled or a mandatory
+runtime dependency. The default source gate exercises provider absence. Run
+`./gradlew verifyFull stageRuntimeJar -PcelestialRuntime=true` for the provider-present native
+profile. Both profiles exercise the production admission/spawn/camp path with native server
+entities and explicit Survival fake-player search anchors; they are not networked multiplayer or
+full-pack acceptance.
+
+The native development runtime includes JEED at the committed pack pin (CurseForge 532286 / 6172935)
+and its required JEI runtime (238222 / 7920915) to register Malum's unconditional
+`jeed:effect_provider` recipes. Its resources-only `nativeFixture`
+source set materializes exactly the four existing authored zinc advancement fixes from
+`../../better-content-modpack/kubejs/data/malum/advancements/recipes/` (`impetus_creation_zinc`,
+`node_focusing_zinc`, `zinc_from_node_smelting`, `zinc_from_node_blasting`). Those upstream Malum
+6646111 conditional advancements are malformed when Create's zinc tags exist. Resource tests bind
+the exact native defects, authored input hashes and copied bytes. The same profile materializes
+the existing authored `malum:create/crushing/crush_rare_earths` recipe fix (seven outputs, rather
+than the upstream eight exceeding Create's limit). The GameTest run alone adds this source set;
+staging rejects accidental inclusion of profile data/classes in the production Commerce JAR.
+Native preparation also exposes the generated dev refmap, creates local server properties, and
+materializes fresh registered SERVER config defaults through the actual native config specs.
+These fixture inputs neither modify the pack nor add production dependencies, recipes or advancements.
+
+`headlessGameTest` also runs `scripts/check_native_diagnostics.py` against the current invocation's
+complete native log and nonce-bound config/loaded-mod metadata. Its narrow optional-target,
+Forge-language metadata, union-resource URL and first-creation registered-config cases are bound
+to native descriptor/class hashes and independently tested; unknown/malformed warnings, all errors,
+stack traces and timing warnings fail. This is a focused development-profile classifier, not a
+change to shared full-pack diagnostics or a full-pack acceptance claim.
+
 ## Better Villagers
 
 Right-click a village villager or a settlement rat in Ratlantis to open the barter journal. Select one of their stocked or craftable goods, select a good from your inventory, and adjust the amount you give. The quote explains whether the resident needs more payment, ingredients, or a nearby workstation. Giving supplies directly is always available. Wandering traders and Plague Doctors keep their authored merchant inventories.

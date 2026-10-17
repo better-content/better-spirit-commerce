@@ -34,9 +34,13 @@ public final class TraderCampService {
     private TraderCampService() { }
 
     public static boolean createForVisit(final WanderingTrader trader, final WanderingTraderTheme theme) {
+        return createForVisit(trader, theme, false);
+    }
+
+    static boolean createForVisit(final WanderingTrader trader, final WanderingTraderTheme theme, final boolean fair) {
         if (!(trader.level() instanceof ServerLevel level)) return false;
         Direction facing = trader.getDirection();
-        BlockPos candidate = findPostPosition(level, trader.blockPosition(), facing);
+        BlockPos candidate = findPostPosition(level, trader.blockPosition(), facing, fair);
         if (candidate == null) return false;
         BlockState state = TraderCampRegistries.POST.get().defaultBlockState().setValue(TraderCampPostBlock.FACING, facing);
         if (!level.setBlock(candidate, state, 3)) return false;
@@ -44,19 +48,27 @@ public final class TraderCampService {
             level.setBlock(candidate, Blocks.AIR.defaultBlockState(), 3);
             return false;
         }
+        if (fair) trader.getPersistentData().putBoolean(SpiritFairVisits.FAIR_TAG, true);
         post.bind(trader, theme);
         retarget(trader, candidate, facing);
-        TraderCampData.get(level).setTarget(trader.getUUID(), level.dimension().location().toString(), candidate, facing);
+        (fair ? TraderCampData.fair(level, trader.getUUID()) : TraderCampData.get(level))
+                .setTarget(trader.getUUID(), level.dimension().location().toString(), candidate, facing);
         installCampGoals(trader);
         return true;
     }
 
-    private static BlockPos findPostPosition(final ServerLevel level, final BlockPos traderPos, final Direction facing) {
+    private static BlockPos findPostPosition(final ServerLevel level, final BlockPos traderPos, final Direction facing,
+                                             final boolean fair) {
         Direction side = facing.getClockWise();
         for (int distance = 2; distance <= 4; distance++) {
             for (int sideways : List.of(0, -1, 1, -2, 2)) {
                 BlockPos pos = traderPos.relative(facing.getOpposite(), distance).relative(side, sideways);
-                if (level.isEmptyBlock(pos) && level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)
+                if (level.hasChunksAt(pos.offset(-3, -1, -3), pos.offset(3, 3, 3))
+                        && level.getWorldBorder().isWithinBounds(pos)
+                        && level.isEmptyBlock(pos) && level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)
+                        && (!fair || level.isEmptyBlock(pos.relative(facing)) && level.isEmptyBlock(pos.relative(facing).above())
+                                && level.getBlockState(pos.relative(facing).below()).isValidSpawn(
+                                level, pos.relative(facing).below(), net.minecraft.world.entity.EntityType.WANDERING_TRADER))
                         && level.isEmptyBlock(pos.above())
                         && level.noCollision(null, new AABB(pos).inflate(1.6D, 0.0D, 1.6D))) {
                     return pos;
@@ -68,7 +80,8 @@ public final class TraderCampService {
 
     public static void restoreOnJoin(final WanderingTrader trader) {
         if (!(trader.level() instanceof ServerLevel level) || !isActiveScheduledTrader(trader)) return;
-        TraderCampData data = TraderCampData.get(level);
+        if (SpiritFairVisits.isFair(trader) && !SpiritFairVisits.maintain(trader)) return;
+        TraderCampData data = TraderCampData.forTrader(trader);
         if (!data.belongsTo(trader.getUUID()) || !data.dimension().equals(level.dimension().location().toString())) return;
         retarget(trader, data.targetPos(), data.facing());
         installCampGoals(trader);
@@ -76,6 +89,7 @@ public final class TraderCampService {
 
     public static boolean isActiveScheduledTrader(final WanderingTrader trader) {
         if (!(trader.level() instanceof ServerLevel level)) return false;
+        if (SpiritFairVisits.isFair(trader)) return true;
         UUID active = WanderingTraderScheduleData.get(level.getServer().overworld()).activeTraderId();
         return trader.getUUID().equals(active);
     }
@@ -113,6 +127,7 @@ public final class TraderCampService {
     public static void onTraderJoin(final EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof WanderingTrader trader && !event.getLevel().isClientSide()) {
             restoreOnJoin(trader);
+            if (trader.isRemoved()) event.setCanceled(true);
         }
     }
 
@@ -121,10 +136,6 @@ public final class TraderCampService {
         if (!(event.getLevel() instanceof ServerLevel level)
                 || !(level.getBlockEntity(event.getPos()) instanceof TraderCampPostBlockEntity post)) return;
         post.retargetLinkedTrader();
-        if (post.traderId() != null) {
-            TraderCampData.get(level).setTarget(post.traderId(), level.dimension().location().toString(),
-                    event.getPos(), event.getPlacedBlock().getValue(TraderCampPostBlock.FACING));
-        }
     }
 
     @SubscribeEvent
@@ -153,14 +164,18 @@ public final class TraderCampService {
     }
 
     static void depart(final WanderingTrader trader, final ServerLevel level) {
-        long packedPos = trader.getPersistentData().getLong(CAMP_POS_TAG);
-        if (trader.getPersistentData().contains(CAMP_POS_TAG)
-                && level.getBlockEntity(BlockPos.of(packedPos)) instanceof TraderCampPostBlockEntity post
+        TraderCampData camp = TraderCampData.forTrader(trader);
+        boolean fair = SpiritFairVisits.isFair(trader);
+        BlockPos postPos = fair && camp.belongsTo(trader.getUUID()) ? camp.targetPos()
+                : BlockPos.of(trader.getPersistentData().getLong(CAMP_POS_TAG));
+        ServerLevel campLevel = fair ? level.getServer().overworld() : level;
+        if (trader.getPersistentData().contains(CAMP_POS_TAG) && (!fair || campLevel.hasChunkAt(postPos))
+                && campLevel.getBlockEntity(postPos) instanceof TraderCampPostBlockEntity post
                 && trader.getUUID().equals(post.traderId())) {
-            level.setBlock(BlockPos.of(packedPos), Blocks.AIR.defaultBlockState(), 3);
+            campLevel.setBlock(postPos, Blocks.AIR.defaultBlockState(), 3);
         }
-        TraderCampData.get(level).clear(trader.getUUID());
-        WanderingTraderScheduleData.get(level).clearActiveTrader();
+        camp.clear(trader.getUUID());
+        if (!SpiritFairVisits.isFair(trader)) WanderingTraderScheduleData.get(level).clearActiveTrader();
         trader.discard();
     }
 

@@ -69,6 +69,7 @@ public final class BetterSpiritCommerce {
 
     private void registerGameTests(RegisterGameTestsEvent event) {
         event.register(WanderingTraderGameTests.class);
+        event.register(com.bettercontent.spiritcommerce.trader.SpiritFairGameTests.class);
         event.register(SpiritPouchGameTests.class);
         event.register(ResidentGameTests.class);
         event.register(PlayerStallGameTests.class);

@@ -29,6 +29,9 @@ TARGETS = {
 STARTUP_LOGGER = 'better_spirit_commerce.native_startup/'
 STARTUP_MARKER = re.compile(r'SPIRIT_NATIVE_STARTUP_BOUNDARY nonce=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}) phase=(START_1|END_1|START_2)')
 STARTUP_PHASES = ('START_1', 'END_1', 'START_2')
+TIMING_LOGGER = 'better_spirit_commerce.native_timing/'
+TIMING = re.compile(r'SPIRIT_NATIVE_TICK_TIMING nonce=([0-9a-f-]{36}) index=([1-3]) phase=(START|END) tick_count=(0|[1-9][0-9]*) mono_ns=(0|[1-9][0-9]*) mono_ms=(0|[1-9][0-9]*) sample_end_ns=(0|[1-9][0-9]*) next_tick_ms=(0|[1-9][0-9]*)')
+TIMING_PHASES = tuple((index, phase) for index in range(1, 4) for phase in ('START', 'END'))
 LAG = re.compile(r"Can't keep up! Is the server overloaded\? Running ([1-9][0-9]*)ms or ([1-9][0-9]*) ticks behind")
 ATTRIBUTE = 'dev.shadowsoffire.attributeslib.client.AttributesLibClient'
 SLEEPING = 'github.cosmicdan.sleepingoverhaul.server.ServerState'
@@ -54,6 +57,9 @@ def validate_inputs():
             if 'META-INF/mods.toml' in jar.namelist():
                 raise ValueError('Language/core artifact acquired mods.toml')
     with zipfile.ZipFile(MAPPED) as jar:
+        check_hash(jar.read('net/minecraft/server/MinecraftServer.class'), 'c8746828ef5885a6e0088d09431f154f11744580ac25927a67221689f649b356')
+        check_hash(jar.read('net/minecraft/gametest/framework/GameTestServer.class'), 'f3d8dfa04059f50cf78b6ef48cd39003a1cfa7465182292bd7ad95618cd01985')
+        check_hash(jar.read('net/minecraft/Util.class'), 'd5edddee1f571c90a6d98321c25c3342f71c170708004557a5696b6deecbc832')
         check_hash(jar.read('net/minecraftforge/common/ForgeConfigSpec.class'), '633184c06812ebeb2fc6ee3f101da946657b5d46c7c8cfb22d63130cd491db3d')
         check_hash(jar.read('net/minecraft/server/packs/VanillaPackResourcesBuilder.class'), 'cf63fa701dbde417c8ccd241325e0eaa0c03bbfa4c56c509a36f729e6ace9485')
     loader = module_file('fmlloader', 'b27b57b2f641bfe6ecdaf206ee54880d26bb9c10')
@@ -139,13 +145,44 @@ def performance_record(number, line, message, thread=None, logger=None, level=No
             'accepted': False, '_candidate': False}
 
 
+def delayed_initial_debt(notice, timing, markers):
+    """No clock reset or stall repair: prove a single carried first-test setup debt."""
+    if len(timing) != 6 or notice['duration_ms'] is None or notice['ticks'] is None:
+        return None
+    start1, end1, start2, end2, start3, end3 = timing
+    duration, ticks = notice['duration_ms'], notice['ticks']
+    setup = start2['mono_ms'] - end1['mono_ms']
+    # Lower bound prevents sampling latency/rounding from hiding residual >=2000ms.
+    setup_lower = (start2['mono_ns'] - end1['sample_end_ns']) // 1_000_000
+    residual, residual_upper = duration - setup, duration - setup_lower
+    instant = end2['next_tick_ms'] + duration
+    ordered = sorted(timing + markers + [notice], key=lambda item: item['source_line'])
+    wall_times = [datetime.datetime.strptime(item['timestamp'], '%d%b%Y %H:%M:%S.%f') for item in ordered]
+    schedule = (end1['next_tick_ms'] == start1['next_tick_ms']
+                and start2['next_tick_ms'] == end1['next_tick_ms'] + 50
+                and end2['next_tick_ms'] == start2['next_tick_ms']
+                and start3['next_tick_ms'] == end2['next_tick_ms'] + 50 + ticks * 50
+                and end3['next_tick_ms'] == start3['next_tick_ms'])
+    eligible = (end2['source_line'] < notice['source_line'] < start3['source_line']
+            and duration > 2000 and setup_lower > 0 and 0 <= residual <= residual_upper < 2000
+            and end2['mono_ms'] <= instant <= start3['mono_ms'] and schedule
+            and markers[0]['source_line'] < start1['source_line'] < markers[1]['source_line']
+            < end1['source_line'] < markers[2]['source_line'] < start2['source_line']
+            and all(left <= right for left, right in zip(wall_times, wall_times[1:])))
+    return dict(kind='delayed-initial-setup-debt', eligible=eligible, schedule_matches=schedule, setup_interval_ms=setup,
+                setup_interval_lower_ms=setup_lower, nonsetup_residual_ms=residual,
+                nonsetup_residual_upper_ms=residual_upper, warning_mono_ms=instant,
+                schedule_proof=timing)
+
+
 def inspect(lines, metadata, diagnostics=None):
     if metadata.get('dist') != 'DEDICATED_SERVER':
         raise ValueError('Diagnostics apply only to the dedicated GameTest dev profile')
     diagnostics = diagnostics if diagnostics is not None else {}
     failures, counts, seen = [], collections.Counter(), set()
     context, previous = None, None
-    markers, notices = [], []
+    markers, notices, timing = [], [], []
+    timing_invalid = False
     boundary_invalid = False
     nonce = metadata.get('nonce')
     for number, raw in enumerate(lines, 1):
@@ -156,6 +193,9 @@ def inspect(lines, metadata, diagnostics=None):
                 notices.append(performance_record(number, line, line[line.index("Can't keep up!"):]))
                 failures.append((number, line))
             if '/WARN]' in line or '/ERROR]' in line or '/FATAL]' in line or previous in ('WARN', 'ERROR', 'FATAL') and line.strip():
+                failures.append((number, line))
+            if 'SPIRIT_NATIVE_TICK_TIMING' in line:
+                timing_invalid = True
                 failures.append((number, line))
             if 'SPIRIT_NATIVE_STARTUP_BOUNDARY' in line:
                 boundary_invalid = True
@@ -171,6 +211,25 @@ def inspect(lines, metadata, diagnostics=None):
             failures.append((number, line))
             continue
         previous = level
+        if 'SPIRIT_NATIVE_TICK_TIMING' in message or logger == TIMING_LOGGER:
+            sample = TIMING.fullmatch(message)
+            valid = sample is not None and thread == 'Server thread' and level == 'INFO' and logger == TIMING_LOGGER
+            if valid:
+                token, index, phase, counter, nanos, millis, sample_end, next_tick = sample.groups()
+                index, counter, nanos, millis, sample_end, next_tick = map(int, (index, counter, nanos, millis, sample_end, next_tick))
+                valid = (token == nonce and len(timing) < 6 and (index, phase) == TIMING_PHASES[len(timing)]
+                         and counter == index - (phase == 'START')
+                         and nanos <= sample_end and nanos // 1_000_000 <= millis <= sample_end // 1_000_000
+                         and (not timing or (nanos >= timing[-1]['sample_end_ns']
+                              and millis >= timing[-1]['mono_ms'] and timestamp >= datetime.datetime.strptime(timing[-1]['timestamp'], '%d%b%Y %H:%M:%S.%f'))))
+            if valid:
+                timing.append(dict(index=index, phase=phase, tick_count=counter, mono_ns=nanos,
+                                   mono_ms=millis, sample_end_ns=sample_end, next_tick_ms=next_tick,
+                                   timestamp=stamp, source_line=number))
+            else:
+                timing_invalid = True
+                failures.append((number, line))
+            continue
         if 'SPIRIT_NATIVE_STARTUP_BOUNDARY' in message or logger == STARTUP_LOGGER:
             marker = STARTUP_MARKER.fullmatch(message)
             valid = (marker is not None and marker.group(1) == nonce
@@ -188,11 +247,11 @@ def inspect(lines, metadata, diagnostics=None):
         if message.startswith("Can't keep up!"):
             notice = performance_record(number, line, message, thread, logger, level, stamp)
             milliseconds, ticks = notice['duration_ms'], notice['ticks']
-            notice['_candidate'] = (milliseconds is not None and ticks is not None
+            notice['_identity'] = (milliseconds is not None and ticks is not None
                          and milliseconds > 0 and ticks > 0 and ticks == milliseconds // 50
                          and thread == 'Server thread' and level == 'WARN'
-                         and logger == 'net.minecraft.server.MinecraftServer/'
-                         and len(markers) == 2 and not boundary_invalid
+                         and logger == 'net.minecraft.server.MinecraftServer/')
+            notice['_candidate'] = (notice['_identity'] and len(markers) == 2 and not boundary_invalid
                          and timestamp >= datetime.datetime.strptime(markers[1]['timestamp'], '%d%b%Y %H:%M:%S.%f'))
             notices.append(notice)
             continue
@@ -211,14 +270,26 @@ def inspect(lines, metadata, diagnostics=None):
     boundary_valid = not boundary_invalid and len(markers) == 3
     if not boundary_valid:
         failures.append((0, 'Missing, reordered, duplicate, or invalid nonce-bound native startup markers'))
+    timing_valid = not timing_invalid and len(timing) == 6
+    if timing and not timing_valid:
+        failures.append((0, 'Incomplete or invalid first-three-tick telemetry'))
     for notice in notices:
+        identity = notice.pop('_identity', False)
         accepted = notice.pop('_candidate') and boundary_valid and len(notices) == 1
         if accepted:
             accepted = datetime.datetime.strptime(notice['timestamp'], '%d%b%Y %H:%M:%S.%f') <= datetime.datetime.strptime(
                 markers[2]['timestamp'], '%d%b%Y %H:%M:%S.%f')
+        if accepted:
+            notice['proof'] = {'kind': 'original-first-startup-window'}
+        elif identity and boundary_valid and timing_valid and len(notices) == 1:
+            proof = delayed_initial_debt(notice, timing, markers)
+            accepted = proof is not None and proof['eligible']
+            if proof is not None:
+                notice['proof'] = proof
         notice['accepted'] = accepted
         if accepted:
-            counts['native-first-startup-performance'] += 1
+            counts['native-first-startup-performance' if notice['proof']['kind'] == 'original-first-startup-window'
+                   else 'native-delayed-initial-debt-performance'] += 1
         else:
             failure = (notice['source_line'], notice['source_record'])
             if failure not in failures:
@@ -226,7 +297,7 @@ def inspect(lines, metadata, diagnostics=None):
     diagnostics.update({
         'schema': 'better_spirit_commerce.native_diagnostics.v1',
         'nonce': nonce, 'startup_boundary_valid': boundary_valid, 'startup_markers': markers,
-        'performance_diagnostics': notices, 'classified_counts': dict(counts),
+        'performance_diagnostics': notices, 'tick_timing_valid': timing_valid, 'tick_timing': timing, 'classified_counts': dict(counts),
         'failures': [{'source_line': number, 'record': line} for number, line in failures],
         'passed': not failures,
     })

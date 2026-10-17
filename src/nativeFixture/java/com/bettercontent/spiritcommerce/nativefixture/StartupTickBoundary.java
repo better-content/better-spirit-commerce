@@ -4,6 +4,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import net.minecraft.gametest.framework.GameTestServer;
+import net.minecraft.Util;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 @Mod.EventBusSubscriber(modid = "better_spirit_commerce", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class StartupTickBoundary {
     private static final Logger LOGGER = LoggerFactory.getLogger("better_spirit_commerce.native_startup");
+    private static final Logger TIMING = LoggerFactory.getLogger("better_spirit_commerce.native_timing");
     private static GameTestServer server;
     private static String nonce;
     private static int starts;
@@ -50,6 +52,14 @@ public final class StartupTickBoundary {
             if (firstEnded) throw new IllegalStateException("Duplicate first native END");
             firstEnded = true;
             mark("END_1");
+        }
+        if (starts <= 3) {
+            long nanos = Util.getNanos();
+            long millis = Util.getMillis();
+            long sampleEnd = Util.getNanos();
+            TIMING.info("SPIRIT_NATIVE_TICK_TIMING nonce={} index={} phase={} tick_count={} mono_ns={} mono_ms={} sample_end_ns={} next_tick_ms={}",
+                    nonce, starts, event.phase.name(), current.getTickCount(), nanos, millis,
+                    sampleEnd, current.getNextTickTime());
         }
     }
 

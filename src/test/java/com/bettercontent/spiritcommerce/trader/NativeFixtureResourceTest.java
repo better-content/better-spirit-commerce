@@ -87,6 +87,11 @@ final class NativeFixtureResourceTest {
         assertTrue(code.contains("mark(\"END_1\")"));
         assertTrue(code.contains("mark(\"START_2\")"));
         assertTrue(code.contains("native-diagnostic-nonce"));
+        assertTrue(code.contains("starts <= 3"));
+        assertTrue(code.contains("SPIRIT_NATIVE_TICK_TIMING nonce={}"));
+        assertTrue(code.contains("Util.getNanos()") && code.contains("Util.getMillis()"));
+        assertTrue(code.contains("current.getTickCount()") && code.contains("current.getNextTickTime()"));
+        assertFalse(code.contains("nextTickTime ="), "Evidence must not reset the server schedule");
         assertTrue(code.contains("UUID.fromString(nonce).toString().equals(nonce)"));
     }
 

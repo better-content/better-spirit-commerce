@@ -1,3 +1,4 @@
+import datetime
 import unittest
 import json
 import tempfile
@@ -152,6 +153,99 @@ class NativeDiagnosticsTest(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     d.main(log)
                 self.assertIn('input_error', json.loads((run / 'native-diagnostics.json').read_text()))
+
+    def delayed(self, duration=2187, setup=1871):
+        # Milliseconds in Util's monotonic domain, with independently logged wall time.
+        start1, end1 = 100008, 100093
+        start2 = end1 + setup
+        warning = 100100 + duration
+        end2, start3 = warning - 7, warning + 1
+        def stamp(line, mono):
+            wall = datetime.datetime(2026, 10, 17, 11, 31, 0) + datetime.timedelta(milliseconds=mono - 100000)
+            return line.replace('17Oct2026 11:31:27.496', wall.strftime('%d%b%Y %H:%M:%S.%f')[:-3])
+        def timing(index, phase, mono, next_tick):
+            counter = index - (phase == 'START')
+            return stamp(record(f"SPIRIT_NATIVE_TICK_TIMING nonce={self.metadata['nonce']} index={index} phase={phase} tick_count={counter} mono_ns={mono * 1000000} mono_ms={mono} sample_end_ns={mono * 1000000} next_tick_ms={next_tick}",
+                                d.TIMING_LOGGER, 'INFO', 'Server thread'), mono)
+        lag = stamp(record(f"Can't keep up! Is the server overloaded? Running {duration}ms or {duration // 50} ticks behind",
+                           'net.minecraft.server.MinecraftServer/', thread='Server thread'), warning)
+        next3 = 100100 + 50 + duration // 50 * 50
+        return [stamp(self.marker('START_1'), start1), timing(1, 'START', start1, 100050),
+                stamp(self.marker('END_1'), end1), timing(1, 'END', end1, 100050),
+                stamp(self.marker('START_2'), start2), timing(2, 'START', start2, 100100),
+                timing(2, 'END', end2, 100100), lag,
+                timing(3, 'START', start3, next3), timing(3, 'END', start3 + 100, next3)]
+
+    def test_delayed_first_setup_debt_requires_explicit_clock_and_schedule_proof(self):
+        report = {}
+        failures, counts = d.inspect(self.delayed(), self.metadata, report)
+        self.assertEqual([], failures)
+        self.assertEqual(1, counts['native-delayed-initial-debt-performance'])
+        proof = report['performance_diagnostics'][0]['proof']
+        self.assertEqual(1871, proof['setup_interval_ms'])
+        self.assertEqual(316, proof['nonsetup_residual_ms'])
+        self.assertEqual(316, proof['nonsetup_residual_upper_ms'])
+        self.assertEqual(6, len(proof['schedule_proof']))
+        self.assertTrue(report['tick_timing_valid'])
+
+    def test_delayed_residual_threshold_is_strict_and_does_not_subtract_second_tick(self):
+        self.assertEqual([], d.inspect(self.delayed(duration=3870), self.metadata)[0])  # 1999 residual
+        for duration in (3871, 5000, 1870, 2000):
+            with self.subTest(duration=duration):
+                self.assertTrue(d.inspect(self.delayed(duration=duration), self.metadata)[0])
+        # One nanosecond of sample uncertainty must not hide a residual of 2000ms.
+        lines = self.delayed(duration=3870)
+        lines[3] = lines[3].replace('sample_end_ns=100093000000', 'sample_end_ns=100093000001')
+        self.assertTrue(d.inspect(lines, self.metadata)[0])
+
+    def test_delayed_missing_reordered_repeated_or_forged_timing_fails(self):
+        good = self.delayed()
+        cases = [good[:3] + good[4:], good[:6] + good[7:], good[:8] + good[9:],
+                 good[:7] + [good[7]] + good[7:], good + [good[8]],
+                 good[:6] + [good[8], good[6], good[7]] + good[9:]]
+        for index in (1, 3, 5, 6, 8, 9):
+            for old, new in [(self.metadata['nonce'], '00000000-0000-0000-0000-000000000000'),
+                             ('[Server thread/INFO]', '[main/INFO]'),
+                             ('[Server thread/INFO]', '[Server thread/WARN]'),
+                             (d.TIMING_LOGGER, 'forged/'), ('tick_count=', 'other_count=')]:
+                lines = good.copy(); lines[index] = lines[index].replace(old, new); cases.append(lines)
+            lines = good.copy(); lines[index] = lines[index].rstrip() + ' extra\n'; cases.append(lines)
+        for lines in cases:
+            with self.subTest(lines=lines):
+                report = {}
+                self.assertTrue(d.inspect(lines, self.metadata, report)[0])
+                self.assertTrue(all(not n['accepted'] for n in report['performance_diagnostics']))
+
+    def test_delayed_schedule_counter_clock_and_source_timestamp_mismatches_fail(self):
+        for index, old, new in [(1, 'tick_count=0', 'tick_count=1'),
+                                (3, 'next_tick_ms=100050', 'next_tick_ms=100051'),
+                                (5, 'next_tick_ms=100100', 'next_tick_ms=100101'),
+                                (6, 'next_tick_ms=100100', 'next_tick_ms=100101'),
+                                (8, 'next_tick_ms=102300', 'next_tick_ms=102301'),
+                                (9, 'next_tick_ms=102300', 'next_tick_ms=102301'),
+                                (6, 'mono_ms=102280', 'mono_ms=102288'),
+                                (8, 'mono_ms=102288', 'mono_ms=102286'),
+                                (3, 'sample_end_ns=100093000000', 'sample_end_ns=100092999999'),
+                                (6, '11:31:02.280', '11:31:03.280'),
+                                (7, '11:31:02.287', '11:31:01.000')]:
+            lines = self.delayed(); self.assertIn(old, lines[index])
+            lines[index] = lines[index].replace(old, new)
+            with self.subTest(index=index, old=old, new=new):
+                self.assertTrue(d.inspect(lines, self.metadata)[0])
+
+    def test_delayed_warning_identity_repeats_at_start3_and_later_runtime_stay_blocking(self):
+        good = self.delayed()
+        cases = [good[:7] + good[8:9] + [good[7]] + good[9:],
+                 good + [good[7]], good[:7] + [good[7]] + good[7:]]
+        for old, new in [('[Server thread/WARN]', '[main/WARN]'),
+                         ('[Server thread/WARN]', '[Server thread/ERROR]'),
+                         ('[Server thread/WARN]', '[Server thread/INFO]'),
+                         ('2187ms or 43', '2187ms or 44'), ('2187ms', 'NaNms'),
+                         ('2187ms', '0ms'), ('net.minecraft.server.MinecraftServer/', 'other/')]:
+            lines = good.copy(); lines[7] = lines[7].replace(old, new); cases.append(lines)
+        for lines in cases:
+            with self.subTest(lines=lines):
+                self.assertTrue(d.inspect(lines, self.metadata)[0])
 
     def test_current_pinned_native_inputs_authorize_the_exact_cases(self):
         d.validate_inputs()

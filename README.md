@@ -69,8 +69,16 @@ These fixture inputs neither modify the pack nor add production dependencies, re
 complete native log and nonce-bound config/loaded-mod metadata. Its narrow optional-target,
 Forge-language metadata, union-resource URL and first-creation registered-config cases are bound
 to native descriptor/class hashes and independently tested; unknown/malformed warnings, all errors,
-stack traces and timing warnings fail. This is a focused development-profile classifier, not a
-change to shared full-pack diagnostics or a full-pack acceptance claim.
+stack traces and later runtime lag fail. At most one exact startup lag notice is recorded as a
+nonblocking performance diagnostic: either between the original first-tick end and second-tick
+start, or between the real second-tick end and third-tick start with a complete nonce-bound
+first-three-tick clock/counter/schedule proof. The latter subtracts only the measured post-first-tick
+setup interval and requires the conservative remaining debt to be strictly below vanilla's
+2,000 ms overload threshold. Raw warnings, setup/residual measurements and schedule evidence remain
+in `run-gametest/native-diagnostics.json`; this does not claim repaired performance or identify the
+setup hotspot. Missing or inconsistent proof fails. Timing classes remain nonshipping. This is a
+focused development-profile classifier; shared full-pack diagnostics remain unchanged, and this
+is not a full-pack acceptance claim.
 
 ## Better Villagers
 

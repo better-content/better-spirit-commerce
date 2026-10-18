@@ -8,15 +8,15 @@ and the [shared documentation/policy index](../../better-content-modpack/docs/RE
 
 Forge 1.20.1 mod making Malum spirits the pack's player-effort currency and village identity system.
 
-- Commerce uses sacred, wicked, arcane, aerial, aqueous, earthen, and infernal spirits. Eldritch and umbral spirits retain their special Malum roles and never appear in trade.
+- Commerce has eight identities: sacred, wicked, arcane, aerial, aqueous, earthen, infernal, and Tempo. Eldritch and umbral spirits retain their special Malum roles and never appear in trade.
 - A living entity releases spirits only when the kill is credited to a player, that player's projectile or spell, or an owned creature. Spawner-origin mobs, villagers, traders, guards, golems, and players release none.
 - Existing Malum mappings retain their authored drops. Any otherwise-unmapped hostile deterministically releases two ordinary spirits. Both paths spawn Malum's floating, homing `SpiritItemEntity`; no harvesting tool is required.
 - Village residents barter from personal supplies and nearby recipes. Their stock, food, safe water, rest, current task, and recent exchanges persist with the entity. Existing spirit profession items remain for compatibility, but fixed spirit catalogues and profession conversion are disabled for village villagers.
-- Seven wandering trader identities each have a matching robe, 13 fixed goods, and one one-use offer of two matching spirits for two eggs already assigned to the corresponding profession.
+- Eight wandering trader identities each have a matching robe, 13 fixed goods, and one one-use offer of two matching spirits for two eggs already assigned to the corresponding profession.
 - Scheduled wandering traders pitch a theme-coloured travelling awning on a tall camp post, stay near their camp, and leave when no offers remain. Pick up and re-place the linked post to send its trader to a new camp. The compact cloth shelter has connected front stakes and a crossbar, not a counter or goods display.
-- Plague Doctors draw eight unique oddities from a 42-item mixed-spirit cabinet. Each doctor keeps its stock for one day, then rolls a fresh catalogue at dawn; missing optional-mod goods are skipped safely.
-- `data/better_spirit_commerce/economy/spirit_economy_policy.json` is the single loaded and validated authority for acquisition rules, 245 villager rows, 91 wandering goods, 42 Plague Doctor oddities, and retired item IDs.
-- Create Deco coins and coin stacks, emerald-priced merchant offers, the old purse/wallet, and superseded Malum harvesting equipment are removed, inert, or hidden. Recipe reload also rejects non-kill recipes whose output is one of the seven commerce spirits.
+- Plague Doctors draw eight unique oddities from a 48-item mixed-spirit cabinet. Each doctor keeps its stock for one day, then rolls a fresh catalogue at dawn; missing optional-mod goods are skipped safely.
+- `data/better_spirit_commerce/spiritcommerce/spirit_economy_policy.json` is the loaded and validated base policy for acquisition rules, catalogue rows, and retired item IDs. `EconomyPolicy` derives the Tempo rows in code, giving effective totals of 280 villager catalogue rows, 104 wandering goods, and 48 Plague Doctor oddities. The base JSON itself contains 245/91/42 rows; those are not the effective totals.
+- Create Deco coins and coin stacks, emerald-priced merchant offers, the old purse/wallet, and superseded Malum harvesting equipment are removed, inert, or hidden. At recipe reload, `CoinRecipeFilter` removes retired recipe IDs and the `better_spirit_commerce:spirit_refinement/` family, rewrites exact ordinary Malum spirit IDs to the regional currency identities, and filters retired-item outputs; it is not a blanket non-kill spirit-output rejection.
 - Malum's native Spirit Pouch is the specialist storage surface. Its pack recipe costs exactly three leather and two string.
 
 Run `./gradlew verifyFull stageRuntimeJar` before committing or pushing.
@@ -67,18 +67,21 @@ These fixture inputs neither modify the pack nor add production dependencies, re
 
 `headlessGameTest` also runs `scripts/check_native_diagnostics.py` against the current invocation's
 complete native log and nonce-bound config/loaded-mod metadata. Its narrow optional-target,
-Forge-language metadata, union-resource URL and first-creation registered-config cases are bound
-to native descriptor/class hashes and independently tested; unknown/malformed warnings, all errors,
-stack traces and later runtime lag fail. At most one exact startup lag notice is recorded as a
-nonblocking performance diagnostic: either between the original first-tick end and second-tick
-start, or between the real second-tick end and third-tick start with a complete nonce-bound
-first-three-tick clock/counter/schedule proof. The latter subtracts only the measured post-first-tick
-setup interval and requires the conservative remaining debt to be strictly below vanilla's
-2,000 ms overload threshold. Raw warnings, setup/residual measurements and schedule evidence remain
-in `run-gametest/native-diagnostics.json`; this does not claim repaired performance or identify the
-setup hotspot. Missing or inconsistent proof fails. Timing classes remain nonshipping. This is a
-focused development-profile classifier; shared full-pack diagnostics remain unchanged, and this
-is not a full-pack acceptance claim.
+Forge-language metadata, union-resource URL and first-creation registered-config diagnostic
+classifications are bound to native descriptor/class hashes and independently tested. Warning
+presence, count or unfamiliar wording alone never fails correctness; actual failed operations
+regardless of severity, ERROR/FATAL records and failure stack traces do.
+
+The existing startup-lag attribution proof remains diagnostic evidence: either the original
+first-tick-end to second-tick-start window, or the second-tick-end to third-tick-start window
+with complete nonce-bound first-three-tick clock/counter/schedule samples. The delayed proof
+subtracts only the measured post-first-tick setup interval and requires conservative remaining
+debt below vanilla's 2,000 ms overload threshold. Raw warnings, proof eligibility, setup/residual
+measurements and schedule evidence remain in `run-gametest/native-diagnostics.json`. Missing or
+inconsistent proof, repeated notices and later WARNs do not alone fail correctness. This does
+not invent a standalone performance budget, claim repaired performance or identify the setup
+hotspot. Existing assertions and explicit workload/deadline gates remain unchanged. Timing
+classes remain nonshipping, and this focused source profile is not full-pack acceptance.
 
 ## Better Villagers
 
@@ -110,7 +113,7 @@ bettervillagers execute <uuid> <result_item_id> <result_count> <payment_item_id>
 
 The non-shipping `visualServer` / `visualClient` configurations run a dedicated server and a real Forge client through the production block entity renderer. Prepare and freeze their JVM launch inputs under the shared Forge cache lock, then launch the prepared Java processes directly (under Xvfb when headless). Do not keep a Gradle server invocation holding the cache lock while trying to start a second Gradle client invocation. Every Gradle preparation/verification invocation holds the full-lifetime POSIX `fcntl.lockf` lock at `/home/dev/.worklane/forge-cache.lock`; `flock` is not interchangeable.
 
-On first use, accept the Minecraft EULA in generated `run-visual-server/eula.txt`, and set `online-mode=false` and `enforce-secure-profile=false` in generated `server.properties` for the local offline `Dev` client. Register runtime/build/capture outputs before producing them and dispose of them after the active review, as required by the shared policy. In the server console, run:
+On first use, accept the Minecraft EULA in generated `run-visual-server/eula.txt`, and set `online-mode=false` and `enforce-secure-profile=false` in generated `server.properties` for the local offline `Dev` client. Register runtime/build/capture outputs before producing them and retain them across handoffs by default under the [shared retention policy](../../better-content-modpack/docs/policies/generated-data.md). Closing a review releases activity; it does not delete data. In the server console, run:
 
 ```text
 campvisual prepare <player>

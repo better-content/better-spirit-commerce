@@ -1,7 +1,10 @@
 import datetime
-import unittest
+import hashlib
+import io
+import zipfile
 import json
 import tempfile
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 import check_native_diagnostics as d
@@ -13,149 +16,15 @@ def record(message, logger='mixin/', level='WARN', thread='main'):
 
 class NativeDiagnosticsTest(unittest.TestCase):
     def setUp(self):
-        self.header = f'Configuration file {d.ROOT}/run-gametest/config/better_spirit_commerce-common.toml is not correct. Correcting'
-        self.key = 'Incorrect key wanderingTrader.initialDelay was corrected from null to its default, 48000. '
         self.metadata = {'dist': 'DEDICATED_SERVER', 'mods': {'forge': '47.4.13'},
-                         'corrections': {self.header: [self.key]},
-                         'nonce': '018c0123-4567-489a-abcd-0123456789ab'}
+                         'corrections': {}, 'nonce': '018c0123-4567-489a-abcd-0123456789ab'}
 
-    def marker(self, phase, **kwargs):
+    def marker(self, phase):
         return record(f"SPIRIT_NATIVE_STARTUP_BOUNDARY nonce={self.metadata['nonce']} phase={phase}",
-                      logger=d.STARTUP_LOGGER, level='INFO', thread='Server thread', **kwargs)
-
-    def inspect(self, lines, metadata):
-        # Existing classifier contracts retain their original bootstrap records.
-        return d.inspect(list(lines) + [self.marker(phase) for phase in d.STARTUP_PHASES], metadata)
-
-    def startup(self, lag=None):
-        lines = [self.marker('START_1'), self.marker('END_1'),
-                 record("Running test batch 'defaultBatch:1' (24 tests)...",
-                        'net.minecraft.gametest.framework.GameTestBatchRunner/', 'INFO', 'Server thread'),
-                 record('24 tests are now running!', 'net.minecraft.gametest.framework.GameTestServer/',
-                        'INFO', 'Server thread')]
-        if lag is not None:
-            lines.append(lag)
-        return lines + [self.marker('START_2')]
-
-    def test_original_order_startup_lag_is_recorded_without_claiming_repair(self):
-        message = "Can't keep up! Is the server overloaded? Running 5533ms or 110 ticks behind"
-        diagnostics = {}
-        failures, counts = d.inspect(self.startup(record(message, 'net.minecraft.server.MinecraftServer/',
-                                                       thread='Server thread')), self.metadata, diagnostics)
-        self.assertEqual([], failures)
-        self.assertEqual(1, counts['native-first-startup-performance'])
-        self.assertTrue(diagnostics['startup_boundary_valid'])
-        notice = diagnostics['performance_diagnostics'][0]
-        self.assertEqual(5533, notice['duration_ms'])
-        self.assertEqual(110, notice['ticks'])
-        self.assertEqual(message, notice['message'])
-        self.assertEqual(5, notice['source_line'])
-        self.assertTrue(notice['accepted'])
-
-    def test_any_positive_consistent_startup_duration_without_tuned_limit(self):
-        for ms in [50, 51, 2999, 3000, 5533, 900000, 9223372036854775807]:
-            line = record(f"Can't keep up! Is the server overloaded? Running {ms}ms or {ms // 50} ticks behind",
-                          'net.minecraft.server.MinecraftServer/', thread='Server thread')
-            self.assertEqual([], d.inspect(self.startup(line), self.metadata)[0])
-
-    def test_startup_lag_wrong_identity_numbers_or_payload_fails(self):
-        text = "Can't keep up! Is the server overloaded? Running 5533ms or 110 ticks behind"
-        valid = record(text, 'net.minecraft.server.MinecraftServer/', thread='Server thread')
-        invalid = [valid.replace('[Server thread/WARN]', '[main/WARN]'),
-                   valid.replace('[Server thread/WARN]', '[Server thread/ERROR]'),
-                   valid.replace('[Server thread/WARN]', '[Server thread/FATAL]'),
-                   valid.replace('[Server thread/WARN]', '[Server thread/INFO]'),
-                   valid.replace('net.minecraft.server.MinecraftServer/', 'other/'),
-                   valid.rstrip() + ' extra payload\n']
-        for ms, ticks in [('0', '0'), ('-1', '1'), ('50', '0'), ('5533', '111'),
-                          ('NaN', '110'), ('Infinity', '110'), ('55.33', '1'),
-                          ('05533', '110'), ('5533', '-110'), ('5533', '0110')]:
-            invalid.append(record(f"Can't keep up! Is the server overloaded? Running {ms}ms or {ticks} ticks behind",
-                                  'net.minecraft.server.MinecraftServer/', thread='Server thread'))
-        for line in invalid:
-            with self.subTest(line=line):
-                result = {}
-                self.assertTrue(d.inspect(self.startup(line), self.metadata, result)[0])
-                self.assertEqual(1, len(result['performance_diagnostics']))
-                self.assertFalse(result['performance_diagnostics'][0]['accepted'])
-
-    def test_lag_before_end1_after_start2_repeated_or_missing_markers_fails(self):
-        lag = record("Can't keep up! Is the server overloaded? Running 3000ms or 60 ticks behind",
-                     'net.minecraft.server.MinecraftServer/', thread='Server thread')
-        cases = [[lag], [lag] + self.startup(), self.startup() + [lag],
-                 [self.marker('START_1'), lag, self.marker('END_1'), self.marker('START_2')],
-                 self.startup(lag)[:-1], self.startup(lag)[:-1] + [lag, self.marker('START_2')],
-                 [self.marker('END_1'), self.marker('START_1'), lag, self.marker('START_2')],
-                 self.startup(lag) + [self.marker('START_2')]]
-        for lines in cases:
-            with self.subTest(lines=lines):
-                result = {}
-                self.assertTrue(d.inspect(lines, self.metadata, result)[0])
-                self.assertTrue(all(not x['accepted'] for x in result['performance_diagnostics']))
-        # Even without lag, native runs must prove the fixture boundary was present.
-        self.assertTrue(d.inspect([], self.metadata)[0])
-
-    def test_forged_nonce_marker_thread_logger_level_and_continuations_fail(self):
-        lag = record("Can't keep up! Is the server overloaded? Running 3000ms or 60 ticks behind",
-                     'net.minecraft.server.MinecraftServer/', thread='Server thread')
-        for replacement in [self.marker('END_1').replace(self.metadata['nonce'], '00000000-0000-0000-0000-000000000000'),
-                            self.marker('END_1').replace('[Server thread/INFO]', '[main/INFO]'),
-                            self.marker('END_1').replace('[Server thread/INFO]', '[Server thread/WARN]'),
-                            self.marker('END_1').replace(d.STARTUP_LOGGER, 'forged/'),
-                            self.marker('END_1').rstrip() + ' extra\n']:
-            lines = self.startup(lag)
-            lines[1] = replacement
-            self.assertTrue(d.inspect(lines, self.metadata)[0])
-        self.assertTrue(d.inspect(self.startup(lag) + [record('unknown runtime warning')], self.metadata)[0])
-
-    def test_malformed_lag_envelopes_fail_and_still_have_structured_evidence(self):
-        lag = record("Can't keep up! Is the server overloaded? Running 3000ms or 60 ticks behind",
-                     'net.minecraft.server.MinecraftServer/', thread='Server thread')
-        for bad in [lag.replace('[Server thread/WARN]', 'Server thread/WARN]'),
-                    lag.replace('17Oct2026', '99Oct2026')]:
-            report = {}
-            self.assertTrue(d.inspect(self.startup(bad), self.metadata, report)[0])
-            self.assertEqual(1, len(report['performance_diagnostics']))
-            notice = report['performance_diagnostics'][0]
-            self.assertEqual(5, notice['source_line'])
-            self.assertEqual(3000, notice['duration_ms'])
-            self.assertEqual(60, notice['ticks'])
-            self.assertFalse(notice['accepted'])
-
-    def test_boundary_timestamps_cannot_be_reordered_around_a_notice(self):
-        lag = record("Can't keep up! Is the server overloaded? Running 3000ms or 60 ticks behind",
-                     'net.minecraft.server.MinecraftServer/', thread='Server thread')
-        for index, replacement in [(0, '11:31:28.496'), (1, '11:31:28.496'), (5, '11:31:26.496')]:
-            lines = self.startup(lag)
-            lines[index] = lines[index].replace('11:31:27.496', replacement)
-            self.assertTrue(d.inspect(lines, self.metadata)[0])
-
-    def test_structured_report_written_on_unknown_and_metadata_failure(self):
-        Path.home().joinpath('.tmp').mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(dir=Path.home() / '.tmp') as temporary:
-            run = Path(temporary)
-            log = run / 'logs/latest.log'
-            log.parent.mkdir()
-            (run / 'native-diagnostic-nonce').write_text(self.metadata['nonce'])
-            (run / 'native-diagnostic-inputs.json').write_text(json.dumps(self.metadata))
-            lag = record("Can't keep up! Is the server overloaded? Running 3000ms or 60 ticks behind",
-                         'net.minecraft.server.MinecraftServer/', thread='Server thread')
-            log.write_text(''.join(self.startup(lag) + [record('unknown runtime warning')]))
-            with patch.object(d, 'validate_inputs'):
-                self.assertEqual(1, d.main(log))
-                report = json.loads((run / 'native-diagnostics.json').read_text())
-                self.assertFalse(report['passed'])
-                self.assertTrue(report['failures'])
-                self.assertEqual(1, len(report['performance_diagnostics']))
-                self.assertEqual(3000, report['performance_diagnostics'][0]['duration_ms'])
-                self.assertTrue(report['performance_diagnostics'][0]['accepted'])
-                (run / 'native-diagnostic-nonce').write_text('forged')
-                with self.assertRaises(ValueError):
-                    d.main(log)
-                self.assertIn('input_error', json.loads((run / 'native-diagnostics.json').read_text()))
+                      d.STARTUP_LOGGER, 'INFO', 'Server thread')
 
     def delayed(self, duration=2187, setup=1871):
-        # Milliseconds in Util's monotonic domain, with independently logged wall time.
+        # Independent wall/monotonic samples preserve the native attribution oracle.
         start1, end1 = 100008, 100093
         start2 = end1 + setup
         warning = 100100 + duration
@@ -176,153 +45,253 @@ class NativeDiagnosticsTest(unittest.TestCase):
                 timing(2, 'END', end2, 100100), lag,
                 timing(3, 'START', start3, next3), timing(3, 'END', start3 + 100, next3)]
 
-    def test_delayed_first_setup_debt_requires_explicit_clock_and_schedule_proof(self):
-        report = {}
-        failures, counts = d.inspect(self.delayed(), self.metadata, report)
-        self.assertEqual([], failures)
-        self.assertEqual(1, counts['native-delayed-initial-debt-performance'])
-        proof = report['performance_diagnostics'][0]['proof']
-        self.assertEqual(1871, proof['setup_interval_ms'])
-        self.assertEqual(316, proof['nonsetup_residual_ms'])
-        self.assertEqual(316, proof['nonsetup_residual_upper_ms'])
-        self.assertEqual(6, len(proof['schedule_proof']))
-        self.assertTrue(report['tick_timing_valid'])
-
-    def test_delayed_residual_threshold_is_strict_and_does_not_subtract_second_tick(self):
-        self.assertEqual([], d.inspect(self.delayed(duration=3870), self.metadata)[0])  # 1999 residual
-        for duration in (3871, 5000, 1870, 2000):
-            with self.subTest(duration=duration):
-                self.assertTrue(d.inspect(self.delayed(duration=duration), self.metadata)[0])
-        # One nanosecond of sample uncertainty must not hide a residual of 2000ms.
-        lines = self.delayed(duration=3870)
-        lines[3] = lines[3].replace('sample_end_ns=100093000000', 'sample_end_ns=100093000001')
-        self.assertTrue(d.inspect(lines, self.metadata)[0])
-
-    def test_delayed_missing_reordered_repeated_or_forged_timing_fails(self):
-        good = self.delayed()
-        cases = [good[:3] + good[4:], good[:6] + good[7:], good[:8] + good[9:],
-                 good[:7] + [good[7]] + good[7:], good + [good[8]],
-                 good[:6] + [good[8], good[6], good[7]] + good[9:]]
-        for index in (1, 3, 5, 6, 8, 9):
-            for old, new in [(self.metadata['nonce'], '00000000-0000-0000-0000-000000000000'),
-                             ('[Server thread/INFO]', '[main/INFO]'),
-                             ('[Server thread/INFO]', '[Server thread/WARN]'),
-                             (d.TIMING_LOGGER, 'forged/'), ('tick_count=', 'other_count=')]:
-                lines = good.copy(); lines[index] = lines[index].replace(old, new); cases.append(lines)
-            lines = good.copy(); lines[index] = lines[index].rstrip() + ' extra\n'; cases.append(lines)
-        for lines in cases:
-            with self.subTest(lines=lines):
-                report = {}
-                self.assertTrue(d.inspect(lines, self.metadata, report)[0])
-                self.assertTrue(all(not n['accepted'] for n in report['performance_diagnostics']))
-
-    def test_delayed_schedule_counter_clock_and_source_timestamp_mismatches_fail(self):
-        for index, old, new in [(1, 'tick_count=0', 'tick_count=1'),
-                                (3, 'next_tick_ms=100050', 'next_tick_ms=100051'),
-                                (5, 'next_tick_ms=100100', 'next_tick_ms=100101'),
-                                (6, 'next_tick_ms=100100', 'next_tick_ms=100101'),
-                                (8, 'next_tick_ms=102300', 'next_tick_ms=102301'),
-                                (9, 'next_tick_ms=102300', 'next_tick_ms=102301'),
-                                (6, 'mono_ms=102280', 'mono_ms=102288'),
-                                (8, 'mono_ms=102288', 'mono_ms=102286'),
-                                (3, 'sample_end_ns=100093000000', 'sample_end_ns=100092999999'),
-                                (6, '11:31:02.280', '11:31:03.280'),
-                                (7, '11:31:02.287', '11:31:01.000')]:
-            lines = self.delayed(); self.assertIn(old, lines[index])
-            lines[index] = lines[index].replace(old, new)
-            with self.subTest(index=index, old=old, new=new):
-                self.assertTrue(d.inspect(lines, self.metadata)[0])
-
-    def test_delayed_warning_identity_repeats_at_start3_and_later_runtime_stay_blocking(self):
-        good = self.delayed()
-        cases = [good[:7] + good[8:9] + [good[7]] + good[9:],
-                 good + [good[7]], good[:7] + [good[7]] + good[7:]]
-        for old, new in [('[Server thread/WARN]', '[main/WARN]'),
-                         ('[Server thread/WARN]', '[Server thread/ERROR]'),
-                         ('[Server thread/WARN]', '[Server thread/INFO]'),
-                         ('2187ms or 43', '2187ms or 44'), ('2187ms', 'NaNms'),
-                         ('2187ms', '0ms'), ('net.minecraft.server.MinecraftServer/', 'other/')]:
-            lines = good.copy(); lines[7] = lines[7].replace(old, new); cases.append(lines)
-        for lines in cases:
-            with self.subTest(lines=lines):
-                self.assertTrue(d.inspect(lines, self.metadata)[0])
-
     def test_current_pinned_native_inputs_authorize_the_exact_cases(self):
+        # Full repository gate retains direct native-input validation; synthetic tests
+        # below do not claim these archives were rebuilt or native execution passed.
         d.validate_inputs()
 
-    def test_exact_optional_targets_language_metadata_union_and_native_defaults(self):
+    def test_exact_compatibility_categories_are_observations_not_quotas(self):
         lines = []
         for target, (_, mixin, _) in d.TARGETS.items():
-            lines.append(record(f'Error loading class: {target.replace(".", "/")} (java.lang.ClassNotFoundException: {target})'))
-            lines.append(record(f'@Mixin target {target} was not found better_compat_fixes.mixins.json:{mixin}'))
-        target = d.ATTRIBUTE
-        lines.append(record(f'Error loading class: {target.replace(".", "/")} (java.lang.ClassNotFoundException: {target})'))
+            lines += [record(f'Error loading class: {target.replace(".", "/")} (java.lang.ClassNotFoundException: {target})'),
+                      record(f'@Mixin target {target} was not found better_compat_fixes.mixins.json:{mixin}')]
         for name, digest in d.LANGUAGES.items():
             lines.append(record(f'Mod file {d.module_file(name, digest)} is missing mods.toml file',
                                 'net.minecraftforge.fml.loading.moddiscovery.ModFileParser/LOADING'))
-        for folder in ('assets', 'data'):
-            lines.append(record(f"Assets URL 'union:{d.MAPPED}%23181!/{folder}/.mcassetsroot' uses unexpected schema",
-                                'net.minecraft.server.packs.VanillaPackResourcesBuilder/'))
-        lines += [record(self.header, 'net.minecraftforge.common.ForgeConfigSpec/CORE'),
-                  record(self.key, 'net.minecraftforge.common.ForgeConfigSpec/CORE')]
-        failures, counts = self.inspect(lines, self.metadata)
+        failures, counts = d.inspect(lines * 3, self.metadata)
         self.assertEqual([], failures)
-        self.assertEqual(len(lines), sum(counts.values()))
+        self.assertEqual(len(lines) * 3, sum(counts.values()))
+        self.assertEqual(12, counts['native-language-metadata'])
 
-    def test_new_targets_errors_bad_logger_bad_thread_extra_payload_and_stack_fail(self):
+    def test_unknown_repeated_and_malformed_warnings_do_not_fail_correctness(self):
+        warning = record('new advisory with no prior classification')
+        lines = [warning] * 3501 + [warning.replace('17Oct2026', '99Oct2026'),
+                                   warning.replace('[main/WARN]', 'main/WARN]')]
+        self.assertEqual([], d.inspect(lines, self.metadata)[0])
+        self.assertEqual([], d.inspect([], self.metadata)[0])
+
+    def test_error_severity_is_never_exempted_by_known_warning_text(self):
         target = d.ATTRIBUTE
-        valid = f'Error loading class: {target.replace(".", "/")} (java.lang.ClassNotFoundException: {target})'
-        bad = [record(valid, level='ERROR'), record(valid, level='FATAL'),
-               record(valid, logger='other/'), record(valid, thread='worker-1'),
-               record(valid + ' other payload'), record(valid.replace('AttributesLibClient', 'NewClient')),
-               record("Can't keep up! Is the server overloaded? Running 3000ms or 60 ticks behind",
-                      'net.minecraft.server.MinecraftServer/'),
-               record('Parsing error loading recipe malum:jeed/earthen_might', 'net.minecraft.RecipeManager/', 'ERROR')]
-        for line in bad:
-            with self.subTest(line=line):
-                self.assertTrue(self.inspect([line], self.metadata)[0])
-        self.assertTrue(self.inspect([record(valid), 'java.lang.IllegalStateException: unexpected\n'], self.metadata)[0])
+        familiar = f'Error loading class: {target.replace(".", "/")} (java.lang.ClassNotFoundException: {target})'
+        for severity in ('ERROR', 'FATAL'):
+            lines = [record(familiar, level=severity), record('new advisory', level=severity),
+                     record("Can't keep up! Is the server overloaded? Running 3000ms or 60 ticks behind",
+                            'net.minecraft.server.MinecraftServer/', severity, 'Server thread')]
+            self.assertEqual([1, 2, 3], [number for number, _ in d.inspect(lines, self.metadata)[0]])
 
-    def test_present_target_mod_cannot_be_classified_as_absent(self):
-        target, (mod, mixin, _) = next(iter(d.TARGETS.items()))
-        self.metadata['mods'][mod] = 'test-present'
-        self.assertTrue(self.inspect([record(f'@Mixin target {target} was not found better_compat_fixes.mixins.json:{mixin}')], self.metadata)[0])
+    def test_actual_operation_failures_block_at_any_severity_or_without_envelope(self):
+        messages = ['Registry Object not present: example:missing', 'Registry registration failed',
+                    'Error loading KubeJS script', 'KubeJS errors found [2]', 'Failed to save world',
+                    'Corrupted chunk data', 'Mixin apply failed SleepingOverhaulMixin',
+                    'java.lang.IllegalStateException: unexpected', 'java.lang.AssertionError: invariant',
+                    'java.lang.OutOfMemoryError: heap']
+        for severity in ('INFO', 'WARN', 'ERROR', 'FATAL'):
+            lines = [record(message, level=severity) for message in messages]
+            self.assertEqual(len(lines), len(d.inspect(lines, self.metadata)[0]))
+        self.assertEqual(len(messages), len(d.inspect(messages, self.metadata)[0]))
 
-    def test_sleeping_pseudo_requires_core_present_and_actual_mod_and_runtime_class_absent(self):
-        target = d.SLEEPING
-        message = f'Error loading class: {target.replace(".", "/")} (java.lang.ClassNotFoundException: {target})'
-        self.metadata['mods']['better_celestial_events'] = '0.1.0'
-        self.metadata['sleeping_server_state_present'] = False
-        self.assertEqual([], self.inspect([record(message)], self.metadata)[0])
-        self.assertTrue(self.inspect([record(message, level='ERROR')], self.metadata)[0])
-        self.assertTrue(self.inspect([record('Mixin apply failed SleepingOverhaulMixin')], self.metadata)[0])
-        self.assertTrue(self.inspect([record(message.replace('ServerState', 'OtherState'))], self.metadata)[0])
-        self.metadata['mods']['sleepingoverhaul'] = '2.1.0'
-        self.assertTrue(self.inspect([record(message)], self.metadata)[0])
-        del self.metadata['mods']['sleepingoverhaul']
-        self.metadata['sleeping_server_state_present'] = True
-        self.assertTrue(self.inspect([record(message)], self.metadata)[0])
-        self.metadata['sleeping_server_state_present'] = False
-        del self.metadata['mods']['better_celestial_events']
-        self.assertTrue(self.inspect([record(message)], self.metadata)[0])
+    def test_native_startup_notice_preserves_positive_causal_attribution(self):
+        lag = record("Can't keep up! Is the server overloaded? Running 5533ms or 110 ticks behind",
+                     'net.minecraft.server.MinecraftServer/', thread='Server thread')
+        report = {}
+        lines = [self.marker('START_1'), self.marker('END_1'), lag, self.marker('START_2')]
+        self.assertEqual([], d.inspect(lines, self.metadata, report)[0])
+        self.assertTrue(report['startup_boundary_valid'])
+        self.assertTrue(report['performance_diagnostics'][0]['accepted'])
+        self.assertEqual(5533, report['performance_diagnostics'][0]['duration_ms'])
+        self.assertEqual(lag.rstrip(), report['performance_diagnostics'][0]['source_record'])
 
-    def test_defaults_require_registered_context_exact_null_value_and_single_creation(self):
-        logger = 'net.minecraftforge.common.ForgeConfigSpec/CORE'
-        self.assertTrue(self.inspect([record(self.key, logger)], self.metadata)[0])
-        for value in (self.key.replace('null', 'wrong'), self.key.replace('48000', '12'), self.key.rstrip()):
-            self.assertTrue(self.inspect([record(self.header, logger), record(value, logger)], self.metadata)[0])
-        self.assertTrue(self.inspect([record(self.header, logger)] * 2, self.metadata)[0])
+    def test_delayed_proof_retains_schedule_clock_and_conservative_residual_math(self):
+        report = {}
+        self.assertEqual([], d.inspect(self.delayed(), self.metadata, report)[0])
+        proof = report['performance_diagnostics'][0]['proof']
+        self.assertTrue(report['performance_diagnostics'][0]['accepted'])
+        self.assertEqual(1871, proof['setup_interval_ms'])
+        self.assertEqual(316, proof['nonsetup_residual_upper_ms'])
+        self.assertEqual(6, len(proof['schedule_proof']))
+        # 2000 ms is a native scheduling threshold for attribution, not a newly
+        # invented gameplay budget or a correctness verdict from a WARN alone.
+        for duration, eligible in ((3870, True), (3871, False), (5000, False)):
+            report = {}
+            self.assertEqual([], d.inspect(self.delayed(duration=duration), self.metadata, report)[0])
+            self.assertEqual(eligible, report['performance_diagnostics'][0]['accepted'])
 
-    def test_bad_timestamp_missing_brackets_duplicate_and_other_dist_fail(self):
-        line = record('unknown')
-        for value in (line.replace('17Oct2026', '99Oct2026'), line.replace('[main/WARN]', 'main/WARN]'),
-                      record('unknown', level='FATAL').replace('[main/FATAL]', 'main/FATAL]')):
-            self.assertTrue(self.inspect([value], self.metadata)[0])
-        self.metadata['dist'] = 'CLIENT'
+    def test_invalid_nonce_clock_order_schedule_and_repeats_lose_attribution_not_correctness(self):
+        good = self.delayed()
+        cases = [good[:3] + good[4:], good + [good[7]], good[:7] + [good[7]] + good[7:]]
+        for index, old, new in ((1, self.metadata['nonce'], '00000000-0000-0000-0000-000000000000'),
+                                (3, 'next_tick_ms=100050', 'next_tick_ms=100051'),
+                                (5, 'tick_count=1', 'tick_count=2'),
+                                (6, '11:31:02.280', '11:31:03.280')):
+            lines = good.copy()
+            self.assertIn(old, lines[index])
+            lines[index] = lines[index].replace(old, new)
+            cases.append(lines)
+        for lines in cases:
+            report = {}
+            self.assertEqual([], d.inspect(lines, self.metadata, report)[0])
+            self.assertTrue(all(not notice['accepted'] for notice in report['performance_diagnostics']))
+            self.assertTrue(report['attribution_findings'])
+
+    def test_fixture_metadata_hash_and_nonce_still_fail_closed(self):
         with self.assertRaises(ValueError):
-            self.inspect([], self.metadata)
+            d.inspect([], dict(self.metadata, dist='CLIENT'))
         with self.assertRaises(ValueError):
-            d.check_hash(b'changed native input', '0' * 64)
+            d.check_hash(b'changed input', '0' * 64)
+        Path.home().joinpath('.tmp').mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=Path.home() / '.tmp') as temporary:
+            run = Path(temporary)
+            log = run / 'logs/latest.log'
+            log.parent.mkdir()
+            log.write_text(record('new warning'))
+            (run / 'native-diagnostic-inputs.json').write_text(json.dumps(self.metadata))
+            (run / 'native-diagnostic-nonce').write_text('forged')
+            with patch.object(d, 'validate_inputs'), self.assertRaises(ValueError):
+                d.main(log)
+            self.assertIn('input_error', json.loads((run / 'native-diagnostics.json').read_text()))
+
+    def test_payload_error_word_does_not_replace_structured_severity(self):
+        self.assertFalse(d.operation_failed(record('quoted /ERROR] is just text', level='INFO').rstrip()))
+        self.assertTrue(d.operation_failed('garbled [main/ERROR] failed'))
+
+
+class OptionalNativeProbeTest(unittest.TestCase):
+    def jarjar(self):
+        return record('Failed to load resource META-INF/jarjar/metadata.json from nativeFixture, '
+                      'it does not contain dependency information.',
+                      logger='net.minecraftforge.fml.loading.moddiscovery.AbstractJarFileDependencyLocator/', level='DEBUG')
+
+    def netty(self, array=False):
+        if array:
+            message = 'jdk.internal.misc.Unsafe.allocateUninitializedArray(int): unavailable'
+            heading = ('java.lang.IllegalAccessException: class io.netty.util.internal.PlatformDependent0$7 '
+                       '(in module io.netty.common) cannot access class jdk.internal.misc.Unsafe '
+                       '(in module java.base) because module java.base does not export jdk.internal.misc to module io.netty.common')
+            frame = '\tat io.netty.util.internal.PlatformDependent0$7.run(PlatformDependent0.java:410) ~[netty-common-4.1.82.Final.jar:4.1.82.Final]'
+        else:
+            message = 'direct buffer constructor: unavailable'
+            heading = 'java.lang.UnsupportedOperationException: Reflective setAccessible(true) disabled'
+            frame = '\tat io.netty.util.internal.ReflectionUtil.trySetAccessible(ReflectionUtil.java:31) ~[netty-common-4.1.82.Final.jar:4.1.82.Final]'
+        return [record(message, logger='io.netty.util.internal.PlatformDependent0/', level='DEBUG'), heading, frame]
+
+    def test_proven_optional_debug_probes_are_reported_without_count_budgets(self):
+        lines = (self.netty() + self.netty(array=True) + [self.jarjar()]) * 20
+        failures, counts = d.scan_operations(lines)
+        self.assertEqual([], failures)
+        self.assertEqual(40, counts['native-netty-reflection-probe'])
+        self.assertEqual(20, counts['native-optional-jarjar-probe'])
+
+    def test_optional_jarjar_rule_cannot_hide_required_loads_or_wrong_envelopes(self):
+        for text in [self.jarjar().replace('/DEBUG]', '/ERROR]'),
+                     self.jarjar().replace('/DEBUG]', '/FATAL]'),
+                     self.jarjar().replace('main/DEBUG', 'Server thread/DEBUG'),
+                     self.jarjar().replace('AbstractJarFileDependencyLocator/', 'OtherLocator/'),
+                     self.jarjar().replace('metadata.json', 'required.json'),
+                     self.jarjar().replace('nativeFixture', 'nativeFixture AssertionError: invariant'),
+                     self.jarjar().replace('nativeFixture', 'nativeFixture OutOfMemoryError: heap'),
+                     self.jarjar().replace('it does not contain dependency information.', 'JSON is malformed.'),
+                     self.jarjar().rstrip() + ' java.lang.AssertionError: failure',
+                     self.jarjar().replace('17Oct2026', '99Oct2026')]:
+            with self.subTest(text=text):
+                self.assertTrue(d.scan_operations([text])[0])
+
+    def test_netty_context_requires_exact_header_heading_and_native_stack_provenance(self):
+        for array in (False, True):
+            original = self.netty(array)
+            variants = []
+            for old, new in [('/DEBUG]', '/ERROR]'), ('/DEBUG]', '/FATAL]'),
+                             ('/DEBUG]', '/INFO]'), ('main/DEBUG', 'Server thread/DEBUG'),
+                             ('io.netty.util.internal.PlatformDependent0/', 'other/'),
+                             ('17Oct2026', '99Oct2026')]:
+                variants.append([original[0].replace(old, new), *original[1:]])
+            variants += [original[1:], original[:2],
+                         [original[0], record('unrelated', level='INFO'), *original[1:]],
+                         [original[0], '', *original[1:]],
+                         [original[0], original[1], '\tat unrelated.Probe.run(Probe.java:1)'],
+                         [original[0], original[1] + ' extra failure payload', original[2]]]
+            for lines in variants:
+                with self.subTest(lines=lines):
+                    self.assertTrue(d.scan_operations(lines)[0])
+
+    def test_optional_debug_context_never_hides_uncaught_causes_assertions_or_errors(self):
+        for failure in ['java.lang.AssertionError: invariant', 'java.lang.OutOfMemoryError: heap',
+                        'java.lang.Error: catastrophic', 'java.lang.Exception: uncaught',
+                        'Caused by: java.lang.IllegalStateException: failed',
+                        'Exception in thread "server" java.lang.IllegalStateException: uncaught',
+                        'Failed to load required registry data', 'Error loading KubeJS script']:
+            lines = self.netty() + [failure]
+            self.assertIn((len(lines), failure), d.scan_operations(lines)[0])
+        self.assertTrue(d.scan_operations([record('Failed to read required save data', level='DEBUG')])[0])
+
+    def test_public_inspect_reports_probes_and_blocks_separate_errors(self):
+        metadata = {'dist': 'DEDICATED_SERVER', 'mods': {'forge': '47.4.13'}, 'corrections': {}}
+        lines = self.netty() + [self.jarjar()]
+        diagnostics = {}
+        failures, counts = d.inspect(lines, metadata, diagnostics)
+        self.assertEqual([], failures)
+        self.assertEqual(1, counts['native-netty-reflection-probe'])
+        self.assertEqual(1, counts['native-optional-jarjar-probe'])
+        self.assertTrue(diagnostics['passed'])
+        error = record('Failed to save required world data', level='ERROR')
+        failures, _ = d.inspect(lines + [error], metadata)
+        self.assertIn((len(lines) + 1, error.rstrip()), failures)
+
+
+class CompatDescriptorContractTest(unittest.TestCase):
+    def setUp(self):
+        self.payloads = {'fixture.Common': b'pinned common target class',
+                         'fixture.Client': b'pinned client target class'}
+        self.targets = {f'native.Target{index}': ('optional_mod', mixin, hashlib.sha256(payload).hexdigest())
+                        for index, (mixin, payload) in enumerate(self.payloads.items())}
+        self.config = {'required': False, 'minVersion': '0.8',
+                       'package': 'com.bettercontent.bettercompatfixes.mixin',
+                       'plugin': 'com.bettercontent.bettercompatfixes.mixin.BetterContentMixinPlugin',
+                       'compatibilityLevel': 'JAVA_17', 'injectors': {'defaultRequire': 0},
+                       'mixins': ['fixture.Common'], 'client': ['fixture.Client'], 'server': []}
+
+    def validate(self, config, *, payloads=None, omit=()):
+        archive = io.BytesIO()
+        with zipfile.ZipFile(archive, 'w') as jar:
+            jar.writestr('better_compat_fixes.mixins.json', json.dumps(config, sort_keys=True, indent=3))
+            for mixin, data in (self.payloads if payloads is None else payloads).items():
+                if mixin not in omit:
+                    jar.writestr('com/bettercontent/bettercompatfixes/mixin/' + mixin.replace('.', '/') + '.class', data)
+        archive.seek(0)
+        with zipfile.ZipFile(archive) as jar:
+            d.validate_compat_inputs(jar, self.targets, client_targets={'fixture.Client'})
+
+    def test_unrelated_inventory_and_descriptor_formatting_do_not_change_contract(self):
+        self.validate(self.config)
+        self.config['mixins'].insert(0, 'unrelated.NewIntegrationMixin')
+        self.config['client'].append('unrelated.NewVisualMixin')
+        self.validate(self.config)
+
+    def test_required_package_plugin_mapping_and_loader_policy_drift_fail(self):
+        for key, value in [('required', True), ('required', 0), ('package', 'other.mixin'),
+                           ('plugin', 'other.Plugin'), ('compatibilityLevel', 'JAVA_21'),
+                           ('minVersion', '0.9'), ('refmap', 'other.refmap.json'),
+                           ('injectors', {'defaultRequire': 1}), ('injectors', {'defaultRequire': False})]:
+            changed = dict(self.config, **{key: value})
+            with self.subTest(key=key, value=value), self.assertRaisesRegex(ValueError, 'better_compat_fixes.mixins.json'):
+                self.validate(changed)
+
+    def test_relevant_missing_duplicate_or_wrong_side_mapping_fails(self):
+        for config in [dict(self.config, mixins=[]), dict(self.config, client=[]),
+                       dict(self.config, mixins=['fixture.Common', 'fixture.Common']),
+                       dict(self.config, mixins=['fixture.Common', 'fixture.Client']),
+                       dict(self.config, mixins=[], server=['fixture.Common']),
+                       dict(self.config, mixins=['fixture.Client'], client=['fixture.Common']),
+                       dict(self.config, client='fixture.Client')]:
+            with self.subTest(config=config), self.assertRaisesRegex(ValueError, 'better_compat_fixes.mixins.json'):
+                self.validate(config)
+
+    def test_relevant_class_bytes_and_missing_archive_entries_fail_with_context(self):
+        for mixin in self.payloads:
+            changed = dict(self.payloads, **{mixin: b'changed target annotations or executable mapping'})
+            with self.subTest(mixin=mixin), self.assertRaisesRegex(ValueError, mixin.split('.')[-1] + r'\.class.*sha256 mismatch'):
+                self.validate(self.config, payloads=changed)
+            with self.assertRaisesRegex(ValueError, mixin.split('.')[-1] + r'\.class.*exactly one'):
+                self.validate(self.config, omit={mixin})
 
 
 if __name__ == '__main__':

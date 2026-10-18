@@ -13,6 +13,9 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = Path.home() / '.gradle/caches'
 FORGE_VERSION = '1.20.1-47.4.13'
+# Minecraft 1.20.1 library manifest; Gradle drops the leading zero in its cache directory.
+NETTY_SHA1 = '22d148e85c3f5ebdacc0ce1f5aabb1d420f73f3'
+NETTY = CACHE / 'modules-2/files-2.1/io.netty/netty-common/4.1.82.Final' / NETTY_SHA1 / 'netty-common-4.1.82.Final.jar'
 MAPPED = CACHE / 'forge_gradle/minecraft_user_repo/net/minecraftforge/forge' / (FORGE_VERSION + '_mapped_official_1.20.1') / ('forge-' + FORGE_VERSION + '_mapped_official_1.20.1.jar')
 LANGUAGES = {
     'javafmllanguage': 'cf01e2179f72bd2829c65f5226d7dd0cfb6c686',
@@ -42,13 +45,67 @@ def module_file(name, digest):
     return CACHE / 'modules-2/files-2.1/net.minecraftforge' / name / FORGE_VERSION / digest / (name + '-' + FORGE_VERSION + '.jar')
 
 
-def check_hash(data, expected, algorithm='sha256'):
-    if hashlib.new(algorithm, data).hexdigest() != expected:
-        raise ValueError('Native diagnostic input hash changed')
+def check_hash(data, expected, algorithm='sha256', *, context='native diagnostic input'):
+    actual = hashlib.new(algorithm, data).hexdigest()
+    if actual != expected:
+        raise ValueError(f'{context}: {algorithm} mismatch; expected {expected}, got {actual}')
+
+
+def read_entry(jar, name):
+    context = f'{jar.filename or "<in-memory archive>"}!/{name}'
+    if jar.namelist().count(name) != 1:
+        raise ValueError(f'{context}: expected exactly one archive entry')
+    return jar.read(name)
+
+
+def check_entry_hash(jar, name, expected):
+    check_hash(read_entry(jar, name), expected,
+               context=f'{jar.filename or "<in-memory archive>"}!/{name}')
+
+
+def validate_compat_inputs(jar, targets=None, client_targets=()):
+    """Pin the optional-target contract, not unrelated custom mixin inventory.
+
+    Class-byte pins retain the target annotations and executable mapping contract.
+    Side placement, package and loader policy must still match the inspected source.
+    """
+    targets = TARGETS if targets is None else targets
+    name = 'better_compat_fixes.mixins.json'
+    context = f'{jar.filename or "<in-memory archive>"}!/{name}'
+    try:
+        config = json.loads(read_entry(jar, name))
+    except (ValueError, UnicodeError) as error:
+        raise ValueError(f'{context}: invalid descriptor: {error}') from error
+    if not isinstance(config, dict):
+        raise ValueError(f'{context}: descriptor must be an object')
+    expected_fields = {'required': False, 'minVersion': '0.8',
+                       'package': 'com.bettercontent.bettercompatfixes.mixin',
+                       'plugin': 'com.bettercontent.bettercompatfixes.mixin.BetterContentMixinPlugin',
+                       'compatibilityLevel': 'JAVA_17'}
+    for key, expected in expected_fields.items():
+        if config.get(key) != expected or (key == 'required' and config[key] is not False):
+            raise ValueError(f'{context}: {key} must remain {expected!r}, got {config.get(key)!r}')
+    injectors = config.get('injectors')
+    if not isinstance(injectors, dict) or type(injectors.get('defaultRequire')) is not int or injectors['defaultRequire'] != 0:
+        raise ValueError(f'{context}: injectors.defaultRequire must remain 0')
+    if config.get('refmap') is not None:
+        raise ValueError(f'{context}: unexpected refmap changes the inspected mapping contract')
+    sides = {side: config.get(side, []) for side in ('mixins', 'client', 'server')}
+    for side, entries in sides.items():
+        if not isinstance(entries, list) or any(not isinstance(entry, str) for entry in entries):
+            raise ValueError(f'{context}: {side} must be an array of mixin names')
+    for _, mixin, digest in targets.values():
+        expected_side = 'client' if mixin in client_targets else 'mixins'
+        placements = [side for side, entries in sides.items() for entry in entries if entry == mixin]
+        if placements != [expected_side]:
+            raise ValueError(f'{context}: {mixin} must occur exactly once in {expected_side}; got {placements}')
+        entry = config['package'].replace('.', '/') + '/' + mixin.replace('.', '/') + '.class'
+        check_entry_hash(jar, entry, digest)
 
 
 def validate_inputs():
     """Exact native descriptors/classes, not prior log strings, authorize the limited cases."""
+    check_hash(NETTY.read_bytes(), NETTY_SHA1.zfill(40), 'sha1', context=str(NETTY))
     for name, digest in LANGUAGES.items():
         file = module_file(name, digest)
         # Gradle's cache directory renders leading-zero SHA-1 as an unpadded integer.
@@ -69,15 +126,7 @@ def validate_inputs():
             raise ValueError('Native metadata diagnostic changed')
     provider = Path(os.environ.get('BC_CUSTOM_MOD_JAR_DIR', str(ROOT.parent / 'better-compat-fixes/build/libs')))
     with zipfile.ZipFile(provider / 'better-compat-fixes-0.1.9.jar') as jar:
-        descriptor = jar.read('better_compat_fixes.mixins.json')
-        check_hash(descriptor, '0fb334f27fd59f2260d71b66b725e2ae6b1c6b0d444f59dcc2772565fc1e85aa')
-        config = json.loads(descriptor)
-        if config['required'] is not False:
-            raise ValueError('Optional mixin configuration became required')
-        for _, mixin, digest in TARGETS.values():
-            if mixin not in config['mixins']:
-                raise ValueError('Optional mixin no longer declared')
-            check_hash(jar.read('com/bettercontent/bettercompatfixes/mixin/' + mixin.replace('.', '/') + '.class'), digest)
+        validate_compat_inputs(jar)
     celestial = Path(os.environ['BC_CUSTOM_MOD_JAR_DIR']) / 'better-celestial-events-0.1.0.jar' if 'BC_CUSTOM_MOD_JAR_DIR' in os.environ else ROOT.parent / 'better-celestial-events/build/libs/better-celestial-events-0.1.0.jar'
     with zipfile.ZipFile(celestial) as jar:
         descriptor = jar.read('better_celestial_events.mixins.json')
@@ -175,11 +224,12 @@ def delayed_initial_debt(notice, timing, markers):
                 schedule_proof=timing)
 
 
-def inspect(lines, metadata, diagnostics=None):
+def _inspect_evidence(lines, metadata, diagnostics=None):
+    """Retain strict causal attribution checks as evidence, not a correctness verdict."""
     if metadata.get('dist') != 'DEDICATED_SERVER':
         raise ValueError('Diagnostics apply only to the dedicated GameTest dev profile')
     diagnostics = diagnostics if diagnostics is not None else {}
-    failures, counts, seen = [], collections.Counter(), set()
+    failures, counts = [], collections.Counter()
     context, previous = None, None
     markers, notices, timing = [], [], []
     timing_invalid = False
@@ -261,12 +311,10 @@ def inspect(lines, metadata, diagnostics=None):
             failures.append((number, line))
             continue
         category, context = classify(thread, logger, message, metadata, context) if level == 'WARN' else (None, context)
-        identity = (logger, message, context)
-        if category is None or identity in seen:
+        if category is None:
             failures.append((number, line))
         else:
             counts[category] += 1
-            seen.add(identity)
     boundary_valid = not boundary_invalid and len(markers) == 3
     if not boundary_valid:
         failures.append((0, 'Missing, reordered, duplicate, or invalid nonce-bound native startup markers'))
@@ -302,6 +350,117 @@ def inspect(lines, metadata, diagnostics=None):
         'passed': not failures,
     })
     return failures, dict(counts)
+
+
+# Match failed operations, not the occurrence or volume of advisory records.
+FAILED_OPERATION = re.compile(
+    r'OutOfMemoryError|AssertionError|ReportedException:|ThreadingDetector:|'
+    r'fatal error has been detected|crash report|Exception in server tick loop|'
+    r'Failed to complete lifecycle event|Errors in currently selected datapacks|'
+    r'Error loading KubeJS script|KubeJS errors found \[[1-9][0-9]*]|'
+    r'(?:failed to|error (?:while|when)) (?:load|register|parse|execute|save|read|write|start|join)|'
+    r'Registry Object not present:|(?:registry|registries|script|mixin)[^\n]*(?:failed|failure|corrupt)|'
+    r'corrupt(?:ed|ion)?[^\n]*(?:chunk|world|save|data)|(?:chunk|world|save|data)[^\n]*corrupt(?:ed|ion)?|'
+    r'^\s*(?:Caused by: |Suppressed: |Exception in thread "[^"]+" )?'
+    r'(?:[a-zA-Z_$][\w$]*\.)*(?:\w*Exception|\w*Error):', re.I)
+
+
+def operation_failed(line):
+    match = RECORD.fullmatch(line)
+    if match:
+        _, _, level, _, message = match.groups()
+        return level in ('ERROR', 'FATAL') or bool(FAILED_OPERATION.search(message))
+    return bool(re.search(r'/(?:ERROR|FATAL)\]|\[(?:ERROR|FATAL)\]', line) or FAILED_OPERATION.search(line))
+
+
+# Forge catches FileNotFoundException for optional JarJar metadata and returns
+# Optional.empty; its other exception branch logs ERROR and is never classified.
+OPTIONAL_JARJAR = re.compile(
+    r'Failed to load resource META-INF/jarjar/metadata\.json from [^,\r\n]*, '
+    r'it does not contain dependency information\.')
+STACK_FRAME = re.compile(r'\s+at [\w.$/<>]+\([^()\r\n]*\)(?: ~\[[^\]\r\n]*\])?')
+NETTY_PROBES = {
+    'direct buffer constructor: unavailable': (
+        'java.lang.UnsupportedOperationException: Reflective setAccessible(true) disabled',
+        'io.netty.util.internal.ReflectionUtil.trySetAccessible'),
+    'jdk.internal.misc.Unsafe.allocateUninitializedArray(int): unavailable': (
+        'java.lang.IllegalAccessException: class io.netty.util.internal.PlatformDependent0$7 '
+        '(in module io.netty.common) cannot access class jdk.internal.misc.Unsafe '
+        '(in module java.base) because module java.base does not export jdk.internal.misc to module io.netty.common',
+        'io.netty.util.internal.PlatformDependent0$7.run'),
+}
+
+
+def optional_probe_lines(group):
+    """Only an exact DEBUG record and caught native stack establish probe provenance."""
+    number, line = group[0]
+    match = RECORD.fullmatch(line)
+    if not match:
+        return set(), None
+    stamp, thread, level, logger, message = match.groups()
+    try:
+        datetime.datetime.strptime(stamp, '%d%b%Y %H:%M:%S.%f')
+    except ValueError:
+        return set(), None
+    if thread != 'main' or level != 'DEBUG':
+        return set(), None
+    if (logger == 'net.minecraftforge.fml.loading.moddiscovery.AbstractJarFileDependencyLocator/'
+            and OPTIONAL_JARJAR.fullmatch(message)
+            and not FAILED_OPERATION.search(message.removeprefix('Failed to load resource '))):
+        return {number}, 'native-optional-jarjar-probe'
+    probe = NETTY_PROBES.get(message) if logger == 'io.netty.util.internal.PlatformDependent0/' else None
+    if probe is None:
+        return set(), None
+    continuation = list(group[1:])
+    while continuation and not continuation[-1][1].strip():
+        continuation.pop()
+    if len(continuation) < 2 or continuation[0][1] != probe[0]:
+        return set(), None
+    frames = [text for _, text in continuation[1:]]
+    if not all(STACK_FRAME.fullmatch(text) for text in frames) or not any(
+            re.match(r'\s+at ' + re.escape(probe[1]) + r'\(', text) for text in frames):
+        return set(), None
+    return {continuation[0][0]}, 'native-netty-reflection-probe'
+
+
+def scan_operations(lines):
+    failures, counts, group = [], collections.Counter(), []
+    def flush():
+        if not group:
+            return
+        diagnostic, category = optional_probe_lines(group)
+        if category:
+            counts[category] += 1
+        failures.extend((number, text) for number, text in group
+                        if number not in diagnostic and operation_failed(text))
+    for number, raw in enumerate(lines, 1):
+        line = raw.rstrip('\n')
+        if RECORD.fullmatch(line):
+            flush()
+            group = []
+        group.append((number, line))
+    flush()
+    return failures, counts
+
+
+def inspect(lines, metadata, diagnostics=None):
+    """Correctness is independent of WARN classification and timing-proof eligibility.
+
+    There is no workload performance budget in this isolated parser. Native lag notices
+    and their nonce/clock attribution remain diagnostics; the caller's test assertions,
+    input hashes and execution deadline still gate the declared fixture.
+    """
+    lines = list(lines)
+    diagnostics = diagnostics if diagnostics is not None else {}
+    evidence_findings, counts = _inspect_evidence(lines, metadata, diagnostics)
+    failures, probe_counts = scan_operations(lines)
+    counts.update(probe_counts)
+    diagnostics['classified_counts'] = dict(counts)
+    diagnostics['attribution_findings'] = [{'source_line': number, 'record': line}
+                                          for number, line in evidence_findings]
+    diagnostics['failures'] = [{'source_line': number, 'record': line} for number, line in failures]
+    diagnostics['passed'] = not failures
+    return failures, counts
 
 
 def main(log):

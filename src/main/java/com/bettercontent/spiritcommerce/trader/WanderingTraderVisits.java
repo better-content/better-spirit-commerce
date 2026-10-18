@@ -136,11 +136,17 @@ public final class WanderingTraderVisits {
         UUID id = data.getWanderingTraderId();
         Entity entity = id == null || before.contains(id) ? null : level.getEntity(id);
         if (entity instanceof WanderingTrader trader) {
+            // EntityLookup exposes a live fastutil values view. Discard synchronously removes from
+            // that lookup and can shift its hash cluster underneath the iterator, skipping a companion
+            // (or returning null). Finish discovery before mutating any native entity membership.
+            final var createdLlamas = new java.util.ArrayList<net.minecraft.world.entity.animal.horse.TraderLlama>();
             for (Entity candidate : level.getAllEntities()) {
-                if (!before.contains(candidate.getUUID())
-                        && candidate instanceof net.minecraft.world.entity.animal.horse.TraderLlama llama
-                        && !llama.isTamed() && llama.getOwnerUUID() == null
-                        && llama.getLeashHolder() == trader) llama.discard();
+                if (candidate instanceof net.minecraft.world.entity.animal.horse.TraderLlama llama
+                        && !before.contains(llama.getUUID())) createdLlamas.add(llama);
+            }
+            for (var llama : createdLlamas) {
+                // Recheck ownership immediately before removal; discovery itself grants no ownership.
+                if (!llama.isTamed() && llama.getOwnerUUID() == null && llama.getLeashHolder() == trader) llama.discard();
             }
             TraderCampData.forTrader(trader).clear(trader.getUUID());
             trader.discard();

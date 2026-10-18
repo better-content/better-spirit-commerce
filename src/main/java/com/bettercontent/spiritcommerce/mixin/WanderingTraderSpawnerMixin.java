@@ -12,6 +12,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(WanderingTraderSpawner.class)
@@ -29,17 +31,18 @@ public abstract class WanderingTraderSpawnerMixin {
             final boolean spawnEnemies,
             final boolean spawnFriendlies,
             final CallbackInfoReturnable<Integer> callback) {
-        if (!EconomyConfig.wanderingTraderRecurringVisits()) {
-            return;
-        }
-        callback.setReturnValue(WanderingTraderVisits.tickScheduledVisit(
-                level,
-                serverLevelData,
-                this::spawn));
+        callback.setReturnValue(EconomyConfig.wanderingTraderRecurringVisits()
+                ? WanderingTraderVisits.tickScheduledVisit(level, serverLevelData, this::spawn) : 0);
     }
 
     @ModifyConstant(method = "spawn", constant = @Constant(intValue = 10), require = 1)
     private int betterContentEconomy$removeVanillaOneInTenGate(final int vanillaBound) {
-        return EconomyConfig.wanderingTraderRecurringVisits() ? 1 : vanillaBound;
+        return 1;
+    }
+
+    @Redirect(method = "spawn", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/level/ServerLevel;getRandomPlayer()Lnet/minecraft/server/level/ServerPlayer;"), require = 1)
+    private ServerPlayer betterContentEconomy$choosePlayerWithTradingFunds(final ServerLevel level) {
+        return WanderingTraderVisits.randomEligiblePlayer(level);
     }
 }

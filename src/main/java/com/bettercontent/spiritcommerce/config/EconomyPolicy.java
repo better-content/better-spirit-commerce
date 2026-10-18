@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.minecraft.resources.ResourceLocation;
 
-/** The one loaded and validated authority for acquisition, commerce rows, and retired surfaces. */
+/** Legacy/acquisition/Doctor authority and facade onto the separately authored active wandering pool. */
 public final class EconomyPolicy {
     public static final String SCHEMA = "bc.economy_policy.v4";
     private static final Document DOCUMENT = load();
@@ -131,11 +131,7 @@ public final class EconomyPolicy {
     private static Map<SpiritKind, List<WanderingRow>> groupWanderers() {
         Map<SpiritKind, List<WanderingRow>> rows = new EnumMap<>(SpiritKind.class);
         for (SpiritKind kind : SpiritKind.values()) {
-            var goods = new java.util.ArrayList<>(kind == SpiritKind.TEMPO ? tempoWanderingRows()
-                    : DOCUMENT.wanderingRows().stream().filter(row -> row.kind() == kind).toList());
-            goods.add(new WanderingRow(kind.id(), 1,
-                    new StackSpec("better_spirit_commerce:" + kind.id() + "_campfire", 1), 16, 0));
-            rows.put(kind, List.copyOf(goods));
+            rows.put(kind, WanderingPool.rows(kind).stream().map(WanderingPool.Row::trade).toList());
         }
         return Map.copyOf(rows);
     }

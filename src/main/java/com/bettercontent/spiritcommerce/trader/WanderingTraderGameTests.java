@@ -155,7 +155,7 @@ public final class WanderingTraderGameTests {
     }
 
     @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty", timeoutTicks = 100)
-    public static void everyThemedTraderHasThirteenMatchingGoodsAndEggs(final GameTestHelper helper) {
+    public static void everyThemedTraderHasItsStableSampleOfMatchingGoodsAndSeparateEggs(final GameTestHelper helper) {
         for (WanderingTraderTheme theme : WanderingTraderTheme.values()) {
             WanderingTrader trader = helper.spawn(EntityType.WANDERING_TRADER, new BlockPos(2, 2, 2));
             WanderingTraderVisits.applyTheme(trader, theme, false);
@@ -171,7 +171,8 @@ public final class WanderingTraderGameTests {
             String profession = eggOffer == null ? "" : eggOffer.getResult().getOrCreateTagElement("EntityTag")
                     .getCompound("VillagerData").getString("profession");
             String expectedProfession = SpiritProfessions.definition(theme.spirit()).profession().getId().toString();
-            if (offers.size() != 15 + fontMaps || fontMaps > 1 || eggs != 1
+            int core = WanderingTraderCatalogue.selectedRows(trader, theme.spirit()).size();
+            if (core > 13 || offers.size() != core + 1 + fontMaps || fontMaps > 1 || eggs != 1
                     || !matchingPayment || !expectedProfession.equals(profession)) {
                 helper.fail("Invalid " + theme.id() + " market: offers=" + offers.size()
                         + " eggs=" + eggs + " fontMaps=" + fontMaps

@@ -23,11 +23,12 @@ final class AuthoredStockPolicyTest {
         assertEquals(1, stock.size());
     }
 
-    @Test void oneTimeSeedSumsVanillaAndAuthoredRowsByPhysicalItem() {
+    @Test void explicitPoolPreservesLegacyCommodityCeilingsInsteadOfRecountingMenus() {
         Map<String, Integer> stock = AuthoredStockPolicy.initialStockUnits();
 
-        assertEquals(31, AuthoredStockPolicy.seedSourceRowCount());
-        assertEquals(64, stock.values().stream().mapToInt(Integer::intValue).sum());
+        assertEquals(64, stock.entrySet().stream()
+                .filter(entry -> AuthoredStockPolicy.legacyGlobalCommodity(entry.getKey()))
+                .mapToInt(Map.Entry::getValue).sum());
         assertEquals(4, stock.get("minecraft:diamond"));
         assertEquals(7, stock.get("minecraft:diamond_boots"));
         assertEquals(7, stock.get("minecraft:diamond_helmet"));
@@ -58,6 +59,16 @@ final class AuthoredStockPolicyTest {
         }
         assertFalse(AuthoredStockPolicy.isFinite(new ResourceLocation("minecraft", "bread")));
         assertFalse(AuthoredStockPolicy.isFinite(new ResourceLocation("minecraft", "emerald")));
+    }
+
+    @Test void newImportCeilingsApplyToSpiritSalesNotIndependentResidentBarter() {
+        ResourceLocation milk = new ResourceLocation("minecraft:milk_bucket");
+        assertTrue(AuthoredStockPolicy.isFinite(milk, true));
+        assertFalse(AuthoredStockPolicy.isFinite(milk, false));
+        ResourceLocation diamond = new ResourceLocation("minecraft:diamond");
+        assertTrue(AuthoredStockPolicy.isFinite(diamond, true));
+        assertTrue(AuthoredStockPolicy.isFinite(diamond, false));
+        assertFalse(AuthoredStockPolicy.isFinite(new ResourceLocation("minecraft:bread"), true));
     }
 
     @Test void netheriteRowsShareOneCommodityPoolAcrossDifferentOfferShapes() {

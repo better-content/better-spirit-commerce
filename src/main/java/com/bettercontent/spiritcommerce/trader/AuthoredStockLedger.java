@@ -49,7 +49,7 @@ public final class AuthoredStockLedger {
             if (output < 0 || count <= output + 2) continue;
             String commodity = oldKey.substring(output + 2, count);
             int units = Math.max(0, tag.getInt(oldKey));
-            if (!commodity.isBlank() && units > 0) {
+            if (!commodity.isBlank()) {
                 ledger.remaining.merge(commodity, units, Math::addExact);
             }
         }

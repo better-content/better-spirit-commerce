@@ -89,7 +89,7 @@ public final class SpiritCampfireGameTests {
                 matching.get(0).increaseUses();
                 trader.getOffers();
                 helper.assertTrue(matching.get(0).getUses() == 1 && offers.contains(matching.get(0)), "Catalogue reset fire stock");
-                helper.assertTrue(EconomyPolicy.wanderingRows(kind).size() == 14, "Missing authored row");
+                helper.assertTrue(EconomyPolicy.wanderingRows(kind).size() == 36, "Missing authored row");
             }
             TraderCampService.depart(trader, level);
             helper.assertTrue(level.getBlockState(boughtPos).is(SpiritCampfires.block(SpiritKind.AQUEOUS)), "Departure removed purchased fire");

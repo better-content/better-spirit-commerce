@@ -1,0 +1,4676 @@
+{
+  "schema": "bc.wandering_pool.v1",
+  "rows": [
+    {
+      "id": "impact-01",
+      "spirit": "infernal",
+      "bucket": "STAPLE",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:cooked_beef",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-02",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:cooked_porkchop",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-03",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:cooked_chicken",
+        "count": 3
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-04",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:cooked_mutton",
+        "count": 3
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-05",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:cooked_rabbit",
+        "count": 3
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-06",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "farmersdelight:smoked_ham",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-07",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 1,
+      "result": {
+        "id": "farmersdelight:beef_patty",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-08",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:hamburger",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-09",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:bacon_sandwich",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-10",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:mutton_wrap",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-11",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:roasted_mutton_chops",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-12",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersdelight:steak_and_potatoes",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-13",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "farmersdelight:roast_chicken_block",
+        "count": 1
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-14",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "farmersdelight:honey_glazed_ham_block",
+        "count": 1
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "impact-15",
+      "spirit": "infernal",
+      "bucket": "STAPLE",
+      "cost": 3,
+      "result": {
+        "id": "minecraft:gunpowder",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-16",
+      "spirit": "infernal",
+      "bucket": "STAPLE",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:tnt",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-17",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:fire_charge",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-18",
+      "spirit": "infernal",
+      "bucket": "STAPLE",
+      "cost": 6,
+      "result": {
+        "id": "supplementaries:bomb",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-19",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "supplementaries:bomb_blue",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-20",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "supplementaries:bomb_spiky",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-21",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 12,
+      "result": {
+        "id": "pneumaticcraft:gun_ammo_explosive",
+        "count": 16
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-22",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "pneumaticcraft:gun_ammo_weighted",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-23",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 12,
+      "result": {
+        "id": "pneumaticcraft:gun_ammo_incendiary",
+        "count": 16
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-24",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "ars_nouveau:amplify_arrow",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-25",
+      "spirit": "infernal",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "create:potato_cannon",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-26",
+      "spirit": "infernal",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "pneumaticcraft:cannon_barrel",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-27",
+      "spirit": "infernal",
+      "bucket": "EQUIPMENT",
+      "cost": 24,
+      "result": {
+        "id": "pneumaticcraft:air_cannon",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-28",
+      "spirit": "infernal",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "pneumaticcraft:vortex_cannon",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-29",
+      "spirit": "infernal",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "alexscaves:primitive_club",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-30",
+      "spirit": "infernal",
+      "bucket": "STANDOUT",
+      "cost": 64,
+      "result": {
+        "id": "alexscaves:extinction_spear",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-31",
+      "spirit": "infernal",
+      "bucket": "EQUIPMENT",
+      "cost": 24,
+      "result": {
+        "id": "supplementaries:cannon",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-32",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "supplementaries:cannonball",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-33",
+      "spirit": "infernal",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:flint",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-34",
+      "spirit": "infernal",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "pneumaticcraft:pneumatic_cylinder",
+        "count": 2
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-35",
+      "spirit": "infernal",
+      "bucket": "STANDOUT",
+      "cost": 48,
+      "result": {
+        "id": "pneumaticcraft:minigun",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "impact-36",
+      "spirit": "infernal",
+      "bucket": "CAMPFIRE",
+      "cost": 1,
+      "result": {
+        "id": "better_spirit_commerce:infernal_campfire",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-01",
+      "spirit": "tempo",
+      "bucket": "STAPLE",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:sugar",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-02",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:honey_block",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-03",
+      "spirit": "tempo",
+      "bucket": "STAPLE",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:cookie",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-04",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:pumpkin_pie",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-05",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "farmersdelight:sweet_berry_cookie",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-06",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "farmersdelight:honey_cookie",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-07",
+      "spirit": "tempo",
+      "bucket": "STAPLE",
+      "cost": 3,
+      "result": {
+        "id": "farmersrespite:coffee",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-08",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:chocolate_pie_slice",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-09",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:apple_pie_slice",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-10",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "fruitsdelight:lemon_tart",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-11",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "create:builders_tea",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-12",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "the_bumblezone:bee_bread",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-13",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "the_bumblezone:sugar_water_bottle",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-14",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:cake",
+        "count": 1
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "tempo-15",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:clock",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-16",
+      "spirit": "tempo",
+      "bucket": "STAPLE",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:repeater",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-17",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "minecraft:note_block",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-18",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:redstone_torch",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-19",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "supplementaries:hourglass",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-20",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "create:cuckoo_clock",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-21",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "supplementaries:crank",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-22",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "create:pulse_repeater",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-23",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "create:pulse_extender",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-24",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "create:pulse_timer",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-25",
+      "spirit": "tempo",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "create:sequenced_gearshift",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-26",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "create:gearshift",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-27",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "create:clutch",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-28",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "create:adjustable_chain_gearshift",
+        "count": 2
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-29",
+      "spirit": "tempo",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "create:rotation_speed_controller",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-30",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "create:speedometer",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-31",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 24,
+      "result": {
+        "id": "pneumaticcraft:speed_upgrade",
+        "count": 4
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-32",
+      "spirit": "tempo",
+      "bucket": "STANDOUT",
+      "cost": 48,
+      "result": {
+        "id": "malum:rune_of_haste",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-33",
+      "spirit": "tempo",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "farmersrespite:strong_coffee",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-34",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "create:brass_hand",
+        "count": 2
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-35",
+      "spirit": "tempo",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "morered:pulse_gate",
+        "count": 4
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "tempo-36",
+      "spirit": "tempo",
+      "bucket": "CAMPFIRE",
+      "cost": 1,
+      "result": {
+        "id": "better_spirit_commerce:tempo_campfire",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-01",
+      "spirit": "arcane",
+      "bucket": "STAPLE",
+      "cost": 1,
+      "result": {
+        "id": "farmersdelight:straw",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-02",
+      "spirit": "arcane",
+      "bucket": "STAPLE",
+      "cost": 2,
+      "result": {
+        "id": "farmersdelight:canvas",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-03",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:string",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-04",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:paper",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-05",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:stick",
+        "count": 32
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-06",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 1,
+      "result": {
+        "id": "farmersdelight:tree_bark",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-07",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "minecraft:charcoal",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-08",
+      "spirit": "arcane",
+      "bucket": "STAPLE",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:torch",
+        "count": 32
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-09",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:lantern",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-10",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:shears",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-11",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "minecraft:stonecutter",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-12",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "farmersdelight:cutting_board",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-13",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "farmersdelight:cooking_pot",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-14",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 10,
+      "result": {
+        "id": "farmersdelight:skillet",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-15",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:barrel",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-16",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "supplementaries:sack",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-17",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "create:sand_paper",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-18",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 12,
+      "result": {
+        "id": "create:super_glue",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-19",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "create:belt_connector",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-20",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "minecraft:scaffolding",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-21",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "create:chute",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-22",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:ladder",
+        "count": 32
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-23",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "supplementaries:bellows",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-24",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "supplementaries:flax",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-25",
+      "spirit": "arcane",
+      "bucket": "STANDOUT",
+      "cost": 16,
+      "result": {
+        "id": "create:brown_toolbox",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-26",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "create:cardboard",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-27",
+      "spirit": "arcane",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "create:extendo_grip",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-28",
+      "spirit": "arcane",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "minecraft:anvil",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "work-29",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "malum:arcane_charcoal",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-30",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "malum:hex_ash",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-31",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "occultism:otherworld_ashes",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-32",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "hexerei:wax_blend",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-33",
+      "spirit": "arcane",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "create:crafting_blueprint",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-34",
+      "spirit": "arcane",
+      "bucket": "STAPLE",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:leather",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-35",
+      "spirit": "arcane",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:item_frame",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "work-36",
+      "spirit": "arcane",
+      "bucket": "CAMPFIRE",
+      "cost": 1,
+      "result": {
+        "id": "better_spirit_commerce:arcane_campfire",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-01",
+      "spirit": "aerial",
+      "bucket": "STAPLE",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:apple",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-02",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 1,
+      "result": {
+        "id": "fruitsdelight:blueberry",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-03",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "fruitsdelight:pear",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-04",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "fruitsdelight:peach",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-05",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "fruitsdelight:kiwi",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-06",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "fruitsdelight:mango",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-07",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "fruitsdelight:orange",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-08",
+      "spirit": "aerial",
+      "bucket": "STAPLE",
+      "cost": 2,
+      "result": {
+        "id": "farmersdelight:rope",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-09",
+      "spirit": "aerial",
+      "bucket": "STAPLE",
+      "cost": 3,
+      "result": {
+        "id": "minecraft:lead",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-10",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "minecraft:saddle",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-11",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:oak_boat",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-12",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 10,
+      "result": {
+        "id": "minecraft:minecart",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-13",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:rail",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-14",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "minecraft:powered_rail",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-15",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "hangglider:hang_glider",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-16",
+      "spirit": "aerial",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "hangglider:reinforced_hang_glider",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-17",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "hangglider:glider_wing",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-18",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "aether:cold_parachute",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-19",
+      "spirit": "aerial",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "aether:golden_parachute",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-20",
+      "spirit": "aerial",
+      "bucket": "STAPLE",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:firework_rocket",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-21",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:phantom_membrane",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-22",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 12,
+      "result": {
+        "id": "create:track",
+        "count": 32
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-23",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 10,
+      "result": {
+        "id": "create:controller_rail",
+        "count": 16
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-24",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 16,
+      "result": {
+        "id": "create:track_station",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-25",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "create:minecart_coupling",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-26",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "hangglider:glider_framework",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "mobility-27",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "supplementaries:rope_arrow",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-28",
+      "spirit": "aerial",
+      "bucket": "SUPPLY",
+      "cost": 12,
+      "result": {
+        "id": "vs_clockwork:brass_propeller_bearing",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-29",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "pneumaticcraft:jumping_upgrade_1",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-30",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 32,
+      "result": {
+        "id": "pneumaticcraft:jumping_upgrade_2",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-31",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 48,
+      "result": {
+        "id": "pneumaticcraft:jumping_upgrade_3",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-32",
+      "spirit": "aerial",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "pneumaticcraft:jet_boots_upgrade_1",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-33",
+      "spirit": "aerial",
+      "bucket": "STANDOUT",
+      "cost": 48,
+      "result": {
+        "id": "pneumaticcraft:jet_boots_upgrade_2",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-34",
+      "spirit": "aerial",
+      "bucket": "STANDOUT",
+      "cost": 64,
+      "result": {
+        "id": "pneumaticcraft:jet_boots_upgrade_3",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-35",
+      "spirit": "aerial",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "minecraft:chest_minecart",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "mobility-36",
+      "spirit": "aerial",
+      "bucket": "CAMPFIRE",
+      "cost": 1,
+      "result": {
+        "id": "better_spirit_commerce:aerial_campfire",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-01",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "farmersdelight:cooked_rice",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-02",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersdelight:fried_rice",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-03",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersdelight:pasta_with_meatballs",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-04",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersdelight:pasta_with_mutton_chop",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-05",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:vegetable_soup",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-06",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersdelight:baked_cod_stew",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-07",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:mushroom_rice",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-08",
+      "spirit": "aqueous",
+      "bucket": "STAPLE",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:dried_kelp",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-09",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:baked_potato",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-10",
+      "spirit": "aqueous",
+      "bucket": "STAPLE",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:bread",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-11",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "farmersdelight:stuffed_pumpkin_block",
+        "count": 1
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-12",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersrespite:black_tea",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-13",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "ars_nouveau:source_berry_roll",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-14",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "aether:enchanted_berry",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-15",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "starcatcher:starcatcher_rod",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-16",
+      "spirit": "aqueous",
+      "bucket": "STAPLE",
+      "cost": 2,
+      "result": {
+        "id": "starcatcher:worm",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-17",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "starcatcher:murkwater_bait",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-18",
+      "spirit": "aqueous",
+      "bucket": "STAPLE",
+      "cost": 3,
+      "result": {
+        "id": "starcatcher:starcatcher_twine",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-19",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 3,
+      "result": {
+        "id": "starcatcher:bobber",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-20",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 3,
+      "result": {
+        "id": "starcatcher:hook",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-21",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "starcatcher:steady_bobber",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-22",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "cold_sweat:waterskin",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-23",
+      "spirit": "aqueous",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:cooked_salmon",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "endurance-24",
+      "spirit": "aqueous",
+      "bucket": "STANDOUT",
+      "cost": 12,
+      "result": {
+        "id": "sophisticatedbackpacks:backpack",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-25",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "sophisticatedbackpacks:feeding_upgrade",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-26",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "sophisticatedbackpacks:refill_upgrade",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-27",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "sophisticatedbackpacks:restock_upgrade",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-28",
+      "spirit": "aqueous",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "sophisticatedbackpacks:tank_upgrade",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-29",
+      "spirit": "aqueous",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "create:copper_backtank",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-30",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "create:copper_diving_helmet",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-31",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "create:copper_diving_boots",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-32",
+      "spirit": "aqueous",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "pneumaticcraft:volume_upgrade",
+        "count": 4
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-33",
+      "spirit": "aqueous",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "pneumaticcraft:scuba_upgrade",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-34",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "minecraft:axolotl_bucket",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-35",
+      "spirit": "aqueous",
+      "bucket": "EQUIPMENT",
+      "cost": 10,
+      "result": {
+        "id": "starcatcher:stone_hook",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "endurance-36",
+      "spirit": "aqueous",
+      "bucket": "CAMPFIRE",
+      "cost": 1,
+      "result": {
+        "id": "better_spirit_commerce:aqueous_campfire",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-01",
+      "spirit": "earthen",
+      "bucket": "STAPLE",
+      "cost": 1,
+      "result": {
+        "id": "minecraft:white_wool",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-02",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:white_bed",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-03",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:terracotta",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-04",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:bricks",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-05",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:cobblestone_wall",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-06",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:stone_bricks",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-07",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:mossy_stone_bricks",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-08",
+      "spirit": "earthen",
+      "bucket": "STAPLE",
+      "cost": 4,
+      "result": {
+        "id": "cold_sweat:goat_fur",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-09",
+      "spirit": "earthen",
+      "bucket": "STAPLE",
+      "cost": 6,
+      "result": {
+        "id": "cold_sweat:hoglin_hide",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-10",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "cold_sweat:chameleon_molt",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-11",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "cold_sweat:goat_fur_helmet",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-12",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "cold_sweat:goat_fur_chestplate",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-13",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "cold_sweat:goat_fur_leggings",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-14",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "cold_sweat:goat_fur_boots",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "robustness-15",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "minecraft:shield",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-16",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "minecraft:chainmail_helmet",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-17",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 20,
+      "result": {
+        "id": "minecraft:chainmail_chestplate",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-18",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "minecraft:chainmail_leggings",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-19",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "minecraft:chainmail_boots",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-20",
+      "spirit": "earthen",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "minecraft:diamond_helmet",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-21",
+      "spirit": "earthen",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "minecraft:diamond_boots",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-22",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "create:cut_limestone",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-23",
+      "spirit": "earthen",
+      "bucket": "STANDOUT",
+      "cost": 64,
+      "result": {
+        "id": "minecraft:diamond_chestplate",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-24",
+      "spirit": "earthen",
+      "bucket": "STANDOUT",
+      "cost": 48,
+      "result": {
+        "id": "minecraft:diamond_leggings",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-25",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "minecraft:iron_bars",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-26",
+      "spirit": "earthen",
+      "bucket": "STAPLE",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:chain",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-27",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "cold_sweat:sewing_table",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-28",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 32,
+      "result": {
+        "id": "cold_sweat:hearth",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-29",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 24,
+      "result": {
+        "id": "sophisticatedbackpacks:iron_backpack",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-30",
+      "spirit": "earthen",
+      "bucket": "STANDOUT",
+      "cost": 64,
+      "result": {
+        "id": "sophisticatedbackpacks:diamond_backpack",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-31",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 12,
+      "result": {
+        "id": "tconstruct:iron_reinforcement",
+        "count": 4
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-32",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 12,
+      "result": {
+        "id": "tconstruct:seared_reinforcement",
+        "count": 4
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-33",
+      "spirit": "earthen",
+      "bucket": "SUPPLY",
+      "cost": 24,
+      "result": {
+        "id": "tconstruct:slimesteel_reinforcement",
+        "count": 4
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-34",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 32,
+      "result": {
+        "id": "pneumaticcraft:armor_upgrade",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-35",
+      "spirit": "earthen",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "cold_sweat:minecart_insulation",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "robustness-36",
+      "spirit": "earthen",
+      "bucket": "CAMPFIRE",
+      "cost": 1,
+      "result": {
+        "id": "better_spirit_commerce:earthen_campfire",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-01",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "minecraft:milk_bucket",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-02",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:hot_cocoa",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-03",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "fruitsdelight:mango_milkshake",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-04",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "fruitsdelight:blueberry_custard",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-05",
+      "spirit": "sacred",
+      "bucket": "STAPLE",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:chicken_soup",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-06",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersdelight:noodle_soup",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-07",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "fruitsdelight:fig_chicken_stew",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-08",
+      "spirit": "sacred",
+      "bucket": "STAPLE",
+      "cost": 3,
+      "result": {
+        "id": "supplementaries:soap",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-09",
+      "spirit": "sacred",
+      "bucket": "STAPLE",
+      "cost": 2,
+      "result": {
+        "id": "hexerei:animal_fat",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-10",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "occultism:tallow",
+        "count": 8
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-11",
+      "spirit": "sacred",
+      "bucket": "STAPLE",
+      "cost": 4,
+      "result": {
+        "id": "rats:herb_bundle",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-12",
+      "spirit": "sacred",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "rats:plague_leech",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-13",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "rats:plague_stew",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-14",
+      "spirit": "sacred",
+      "bucket": "EQUIPMENT",
+      "cost": 4,
+      "result": {
+        "id": "aether:white_apple",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-15",
+      "spirit": "sacred",
+      "bucket": "EQUIPMENT",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:bone_meal",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-16",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:mixed_salad",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-17",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "fruitsdelight:mango_salad",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-18",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "farmersdelight:gleaming_salad",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-19",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:cabbage_rolls",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-20",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:pumpkin_soup",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-21",
+      "spirit": "sacred",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "alexscaves:fertilizer",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-22",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersdelight:melon_juice",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-23",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersrespite:green_tea",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-24",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "farmersrespite:dandelion_tea",
+        "count": 2
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-25",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersrespite:rose_hip_tea",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-26",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "farmersrespite:yellow_tea",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-27",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "rats:treacle",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-28",
+      "spirit": "sacred",
+      "bucket": "STANDOUT",
+      "cost": 12,
+      "result": {
+        "id": "aether:skyroot_remedy_bucket",
+        "count": 1
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-29",
+      "spirit": "sacred",
+      "bucket": "STANDOUT",
+      "cost": 16,
+      "result": {
+        "id": "aether:healing_stone",
+        "count": 4
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-30",
+      "spirit": "sacred",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "pneumaticcraft:bandage",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "renewal-31",
+      "spirit": "sacred",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "minecraft:golden_apple",
+        "count": 2
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-32",
+      "spirit": "sacred",
+      "bucket": "STANDOUT",
+      "cost": 48,
+      "result": {
+        "id": "malum:rune_of_idle_restoration",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-33",
+      "spirit": "sacred",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "rats:rat_upgrade_health",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-34",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 2,
+      "result": {
+        "id": "minecraft:honey_bottle",
+        "count": 4
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-35",
+      "spirit": "sacred",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "farmersrespite:long_green_tea",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "renewal-36",
+      "spirit": "sacred",
+      "bucket": "CAMPFIRE",
+      "cost": 1,
+      "result": {
+        "id": "better_spirit_commerce:sacred_campfire",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-01",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:bow",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-02",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "minecraft:crossbow",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-03",
+      "spirit": "wicked",
+      "bucket": "STAPLE",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:arrow",
+        "count": 32
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-04",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "minecraft:spectral_arrow",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-05",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:target",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-06",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "minecraft:name_tag",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-07",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 10,
+      "result": {
+        "id": "minecraft:spyglass",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-08",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "minecraft:compass",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-09",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:map",
+        "count": 4
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-10",
+      "spirit": "wicked",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "minecraft:recovery_compass",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-11",
+      "spirit": "wicked",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "naturescompass:naturescompass",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-12",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:book",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-13",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 6,
+      "result": {
+        "id": "minecraft:writable_book",
+        "count": 2
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-14",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 8,
+      "result": {
+        "id": "create:clipboard",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-15",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 4,
+      "result": {
+        "id": "minecraft:tripwire_hook",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-16",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 3,
+      "result": {
+        "id": "minecraft:lever",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-17",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "create:redstone_link",
+        "count": 2
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-18",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "minecraft:detector_rail",
+        "count": 16
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-19",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "create:display_link",
+        "count": 2
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-20",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 10,
+      "result": {
+        "id": "create:display_board",
+        "count": 4
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-21",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "morered:multiplexer",
+        "count": 4
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-22",
+      "spirit": "wicked",
+      "bucket": "STAPLE",
+      "cost": 2,
+      "result": {
+        "id": "rats:cheese",
+        "count": 16
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-23",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "rats:rat_flute",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-24",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "rats:rat_sack",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-25",
+      "spirit": "wicked",
+      "bucket": "STAPLE",
+      "cost": 6,
+      "result": {
+        "id": "hexerei:dried_sage_bundle",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-26",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 6,
+      "result": {
+        "id": "occultism:brush",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-27",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 8,
+      "result": {
+        "id": "occultism:purified_ink",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-28",
+      "spirit": "wicked",
+      "bucket": "STAPLE",
+      "cost": 8,
+      "result": {
+        "id": "ars_nouveau:blank_parchment",
+        "count": 8
+      },
+      "maxUses": 8,
+      "xp": 0,
+      "renewable": true
+    },
+    {
+      "id": "control-29",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "sophisticatedbackpacks:pickup_upgrade",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-30",
+      "spirit": "wicked",
+      "bucket": "STANDOUT",
+      "cost": 32,
+      "result": {
+        "id": "sophisticatedbackpacks:advanced_magnet_upgrade",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-31",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 12,
+      "result": {
+        "id": "sophisticatedbackpacks:filter_upgrade",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-32",
+      "spirit": "wicked",
+      "bucket": "EQUIPMENT",
+      "cost": 16,
+      "result": {
+        "id": "sophisticatedbackpacks:magnet_upgrade",
+        "count": 1
+      },
+      "maxUses": 2,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-33",
+      "spirit": "wicked",
+      "bucket": "SUPPLY",
+      "cost": 12,
+      "result": {
+        "id": "pneumaticcraft:gun_ammo_ap",
+        "count": 16
+      },
+      "maxUses": 4,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-34",
+      "spirit": "wicked",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "starcatcher:fish_radar",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-35",
+      "spirit": "wicked",
+      "bucket": "STANDOUT",
+      "cost": 24,
+      "result": {
+        "id": "the_bumblezone:honey_compass",
+        "count": 1
+      },
+      "maxUses": 1,
+      "xp": 0,
+      "renewable": false
+    },
+    {
+      "id": "control-36",
+      "spirit": "wicked",
+      "bucket": "CAMPFIRE",
+      "cost": 1,
+      "result": {
+        "id": "better_spirit_commerce:wicked_campfire",
+        "count": 1
+      },
+      "maxUses": 16,
+      "xp": 0,
+      "renewable": true
+    }
+  ],
+  "commodityStocks": [
+    {
+      "item": "aether:cold_parachute",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "aether:enchanted_berry",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "aether:golden_parachute",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "aether:healing_stone",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "aether:skyroot_remedy_bucket",
+      "units": 32,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "alexscaves:extinction_spear",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "alexscaves:primitive_club",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "ars_nouveau:amplify_arrow",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "cold_sweat:hearth",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "cold_sweat:minecart_insulation",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "cold_sweat:sewing_table",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "cold_sweat:waterskin",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:adjustable_chain_gearshift",
+      "units": 64,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:brass_hand",
+      "units": 64,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:brown_toolbox",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:builders_tea",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:chute",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:clutch",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:controller_rail",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:copper_backtank",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:copper_diving_boots",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:copper_diving_helmet",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:cuckoo_clock",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:cut_limestone",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:display_board",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:display_link",
+      "units": 64,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:extendo_grip",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:gearshift",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:minecart_coupling",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:potato_cannon",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:pulse_extender",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:pulse_repeater",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:pulse_timer",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:redstone_link",
+      "units": 64,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:rotation_speed_controller",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:sand_paper",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:sequenced_gearshift",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:speedometer",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:super_glue",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:track",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "create:track_station",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersdelight:cooking_pot",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersdelight:hot_cocoa",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersdelight:melon_juice",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersdelight:skillet",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersrespite:black_tea",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersrespite:coffee",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersrespite:dandelion_tea",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersrespite:green_tea",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersrespite:long_green_tea",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersrespite:rose_hip_tea",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersrespite:strong_coffee",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "farmersrespite:yellow_tea",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "fruitsdelight:mango_milkshake",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "hangglider:reinforced_hang_glider",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "malum:rune_of_haste",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "malum:rune_of_idle_restoration",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:anvil",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:arrow",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:axolotl_bucket",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:bricks",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:chain",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:chainmail_boots",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:chainmail_chestplate",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:chainmail_helmet",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:chainmail_leggings",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:chest_minecart",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:clock",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:cobblestone_wall",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:compass",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:crossbow",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:detector_rail",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:diamond",
+      "units": 4,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_axe",
+      "units": 6,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_boots",
+      "units": 7,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_chestplate",
+      "units": 5,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_helmet",
+      "units": 7,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_hoe",
+      "units": 3,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_leggings",
+      "units": 5,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_pickaxe",
+      "units": 3,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_shovel",
+      "units": 3,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:diamond_sword",
+      "units": 3,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:elytra",
+      "units": 4,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:fire_charge",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:firework_rocket",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:flint",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:golden_apple",
+      "units": 32,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:gunpowder",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:honey_bottle",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:iron_bars",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:lantern",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:lever",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:map",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:milk_bucket",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:minecart",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:mossy_stone_bricks",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:name_tag",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:netherite_axe",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_boots",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_chestplate",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_helmet",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_hoe",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_ingot",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_leggings",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_pickaxe",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_scrap",
+      "units": 4,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_shovel",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:netherite_sword",
+      "units": 1,
+      "scope": "ALL_MERCHANTS"
+    },
+    {
+      "item": "minecraft:note_block",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:oak_boat",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:phantom_membrane",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:powered_rail",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:rail",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:recovery_compass",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:redstone_torch",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:repeater",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:saddle",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:shears",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:shield",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:spectral_arrow",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:spyglass",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:stone_bricks",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:stonecutter",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:target",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:terracotta",
+      "units": 2048,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:tnt",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "minecraft:tripwire_hook",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "morered:multiplexer",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "morered:pulse_gate",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "naturescompass:naturescompass",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:air_cannon",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:armor_upgrade",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:cannon_barrel",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:gun_ammo_ap",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:gun_ammo_explosive",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:gun_ammo_incendiary",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:gun_ammo_weighted",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:jet_boots_upgrade_1",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:jet_boots_upgrade_2",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:jet_boots_upgrade_3",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:jumping_upgrade_1",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:jumping_upgrade_2",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:jumping_upgrade_3",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:minigun",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:pneumatic_cylinder",
+      "units": 64,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:scuba_upgrade",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:speed_upgrade",
+      "units": 64,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:volume_upgrade",
+      "units": 64,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "pneumaticcraft:vortex_cannon",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "rats:rat_flute",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "rats:rat_sack",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "rats:rat_upgrade_health",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:advanced_magnet_upgrade",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:backpack",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:diamond_backpack",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:feeding_upgrade",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:filter_upgrade",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:iron_backpack",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:magnet_upgrade",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:pickup_upgrade",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:refill_upgrade",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:restock_upgrade",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "sophisticatedbackpacks:tank_upgrade",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "starcatcher:bobber",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "starcatcher:fish_radar",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "starcatcher:hook",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "starcatcher:murkwater_bait",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "starcatcher:starcatcher_rod",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "starcatcher:steady_bobber",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "starcatcher:stone_hook",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:bellows",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:bomb",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:bomb_blue",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:bomb_spiky",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:cannon",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:cannonball",
+      "units": 512,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:crank",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:hourglass",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "supplementaries:rope_arrow",
+      "units": 1024,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "tconstruct:iron_reinforcement",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "tconstruct:seared_reinforcement",
+      "units": 128,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "tconstruct:slimesteel_reinforcement",
+      "units": 64,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "the_bumblezone:honey_compass",
+      "units": 8,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "the_bumblezone:sugar_water_bottle",
+      "units": 256,
+      "scope": "SPIRIT_SALES"
+    },
+    {
+      "item": "vs_clockwork:brass_propeller_bearing",
+      "units": 16,
+      "scope": "SPIRIT_SALES"
+    }
+  ]
+}

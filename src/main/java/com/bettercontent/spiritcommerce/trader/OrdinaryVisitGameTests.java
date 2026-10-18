@@ -1,7 +1,5 @@
 package com.bettercontent.spiritcommerce.trader;
 
-import com.bettercontent.spiritcommerce.registry.CurrencyItems;
-import com.bettercontent.spiritcommerce.spirit.CurrencyIdentity;
 import com.mojang.authlib.GameProfile;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +13,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.horse.TraderLlama;
 import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.entity.npc.WanderingTraderSpawner;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
@@ -31,10 +28,11 @@ import net.minecraftforge.gametest.GameTestHolder;
 @net.minecraftforge.gametest.PrefixGameTestTemplate(false)
 public final class OrdinaryVisitGameTests {
     @GameTest(templateNamespace = "better_spirit_commerce", template = "empty", timeoutTicks = 200)
-    public static void nativeSpawnRollbackLocalAdmissionAndSavedDeparture(GameTestHelper helper) {
+    public static void nativeSpawnRollbackScheduledOverlapAndSavedDeparture(GameTestHelper helper) {
         ServerLevel level = helper.getLevel();
         var storage = level.getServer().overworld().getDataStorage();
         var original = TraderCampData.get(level);
+        var originalSchedule = WanderingTraderScheduleData.get(level);
         var data = (ServerLevelData) level.getLevelData();
         UUID previous = data.getWanderingTraderId();
         int oldDelay = data.getWanderingTraderSpawnDelay(), oldChance = data.getWanderingTraderSpawnChance();
@@ -50,6 +48,9 @@ public final class OrdinaryVisitGameTests {
         TraderLlama playerOwned = net.minecraft.world.entity.EntityType.TRADER_LLAMA.create(level);
         try {
             storage.set("better_spirit_commerce_trader_camp", new TraderCampData());
+            var schedule = new WanderingTraderScheduleData();
+            schedule.initializeIfNeeded(level.getGameTime(), 0);
+            storage.set("better_spirit_commerce_wandering_trader", schedule);
             level.getGameRules().getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(true, level.getServer());
             level.getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(true, level.getServer());
             helper.assertTrue(level.hasChunksAt(site.offset(-22, -1, -22), site.offset(22, 12, 22)), "Native fixture pad must be loaded");
@@ -59,7 +60,6 @@ public final class OrdinaryVisitGameTests {
             for (var anchor : List.of(player, near, far)) {
                 anchor.setGameMode(GameType.SURVIVAL);
                 anchor.getInventory().clearContent();
-                anchor.getInventory().setItem(0, new ItemStack(CurrencyItems.item(CurrencyIdentity.WORK).get(), 10));
                 anchor.moveTo(site.getX(), site.getY(), site.getZ());
             }
             far.moveTo(site.getX() + 10000, site.getY(), site.getZ());
@@ -71,7 +71,7 @@ public final class OrdinaryVisitGameTests {
             MinecraftForge.EVENT_BUS.register(observer);
             WanderingTraderSpawner spawner = new WanderingTraderSpawner(data);
             observer.breakCamp = true;
-            // Bounded terrain search retries are immediate, never game-time gates.
+            // Each observer call explicitly advances the saved attempt deadline for this native fixture.
             for (int attempt = 0; attempt < 128 && observer.llamas.size() < 24; attempt++) {
                 observer.tick(level, data, spawner);
                 helper.assertTrue(observer.traders.stream().allMatch(Entity::isRemoved)
@@ -96,9 +96,25 @@ public final class OrdinaryVisitGameTests {
             admitted.add(trader);
             TraderCampData camp = TraderCampData.forTrader(trader);
             long expiry = camp.expiresAt();
-            helper.assertTrue(expiry == level.getGameTime() + 12000 && player.getUUID().equals(camp.anchorOwner()), "Immutable lifetime/owner missing");
-            helper.assertTrue(observer.tick(level, data, spawner) == 0 && !WanderingTraderVisits.eligibleAnchor(level, near), "Local duplicate admitted");
-            helper.assertTrue(WanderingTraderVisits.eligibleAnchor(level, far), "Distant player's arrival globally blocked");
+            helper.assertTrue(expiry == level.getGameTime() + 168000 && player.getUUID().equals(camp.anchorOwner()), "Immutable lifetime/owner missing");
+            long nextArrival = schedule.nextAttemptGameTime();
+            helper.assertTrue(nextArrival >= level.getGameTime() + WanderingTraderVisits.MIN_INTERVAL_TICKS
+                    && nextArrival <= level.getGameTime() + WanderingTraderVisits.MAX_INTERVAL_TICKS,
+                    "Successful arrival did not schedule 5–9 days ahead");
+            helper.assertTrue(spawner.tick(level, true, true) == 0, "Scheduled interval bypassed");
+            helper.assertTrue(WanderingTraderVisits.eligibleAnchor(level, near)
+                    && WanderingTraderVisits.eligibleAnchor(level, far), "Camp occupancy still gates players");
+            // A due arrival can overlap the existing local camp without funds.
+            WanderingTrader overlap = spawn(helper, level, data, spawner, observer);
+            admitted.add(overlap);
+            helper.assertTrue(trader.isAlive(), "Overlapping visit displaced first trader");
+            long overlapDeadline = schedule.nextAttemptGameTime();
+            TraderCampService.depart(trader, level);
+            helper.assertTrue(overlap.getUUID().equals(schedule.activeTraderId())
+                    && schedule.nextAttemptGameTime() == overlapDeadline, "Older departure disturbed newer schedule");
+            trader = overlap;
+            camp = TraderCampData.forTrader(trader);
+            expiry = camp.expiresAt();
             // A second real native visit in a separately authored, explicitly loaded region.
             BlockPos remote = site.east(640);
             for (int cx = (remote.getX() - 28) >> 4; cx <= (remote.getX() + 28) >> 4; cx++)
@@ -107,7 +123,7 @@ public final class OrdinaryVisitGameTests {
             for (int x = -22; x <= 22; x++) for (int z = -22; z <= 22; z++)
                 level.setBlockAndUpdate(remote.offset(x, -1, z), Blocks.STONE.defaultBlockState());
             far.moveTo(remote.getX(), remote.getY(), remote.getZ());
-            level.players().add(near);
+            level.players().remove(player);
             level.players().add(far);
             WanderingTrader remoteTrader = spawn(helper, level, data, spawner, observer);
             admitted.add(remoteTrader);
@@ -115,11 +131,12 @@ public final class OrdinaryVisitGameTests {
                     && trader.isAlive(), "Second regional native visit displaced or reused first visit");
             level.players().remove(near);
             level.players().remove(far);
+            level.players().add(player);
             TraderCampService.depart(remoteTrader, level);
             // Restart the actual SavedData through its NBT API while the entity remains native.
             storage.set("better_spirit_commerce_trader_camp", TraderCampData.load(TraderCampData.get(level).save(new CompoundTag())));
             helper.assertTrue(TraderCampData.forTrader(trader).expiresAt() == expiry
-                    && !WanderingTraderVisits.eligibleAnchor(level, player), "Restart lost local occupancy/deadline");
+                    && WanderingTraderVisits.eligibleAnchor(level, player), "Restart lost deadline or restored occupancy gate");
             TraderCampService.restoreOnJoin(trader);
             helper.assertTrue(TraderCampData.forTrader(trader).expiresAt() == expiry, "Reload renewed visit lifetime");
             // Simulate an entity absent from the loaded entity index, retaining its saved camp.
@@ -158,6 +175,7 @@ public final class OrdinaryVisitGameTests {
             level.players().remove(near);
             level.players().remove(far);
             storage.set("better_spirit_commerce_trader_camp", original);
+            storage.set("better_spirit_commerce_wandering_trader", originalSchedule);
             data.setWanderingTraderId(previous);
             data.setWanderingTraderSpawnDelay(oldDelay);
             data.setWanderingTraderSpawnChance(oldChance);
@@ -187,6 +205,8 @@ public final class OrdinaryVisitGameTests {
         final List<WanderingTrader> traders = new ArrayList<>();
         final List<TraderLlama> llamas = new ArrayList<>();
         int tick(ServerLevel level, ServerLevelData data, WanderingTraderSpawner spawner) {
+            // Author only the deadline, then exercise the actual public native spawner/mixin.
+            WanderingTraderScheduleData.get(level).scheduleRetry(level.getGameTime(), 0);
             final java.util.Set<UUID> before = new java.util.HashSet<>();
             level.getAllEntities().forEach(entity -> before.add(entity.getUUID()));
             UUID previous = data.getWanderingTraderId();

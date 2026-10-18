@@ -214,7 +214,10 @@ public final class TraderCampService {
             campLevel.setBlock(postPos, Blocks.AIR.defaultBlockState(), 3);
         }
         camp.clear(trader.getUUID());
-        if (!SpiritFairVisits.isFair(trader)) WanderingTraderScheduleData.get(level).clearActiveTrader();
+        if (!fair) {
+            WanderingTraderScheduleData schedule = WanderingTraderScheduleData.get(level);
+            if (trader.getUUID().equals(schedule.activeTraderId())) schedule.clearActiveTrader();
+        }
         trader.discard();
     }
 

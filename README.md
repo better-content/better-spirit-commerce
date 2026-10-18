@@ -17,7 +17,7 @@ catalogues. Read [System boundaries](docs/commerce-systems.md) before catalogue 
 - Existing Malum mappings retain their authored drops. Any otherwise-unmapped hostile deterministically releases two ordinary spirits. Both paths spawn Malum's floating, homing `SpiritItemEntity`; no harvesting tool is required.
 - Village residents barter from personal supplies and nearby recipes. Their stock, food, safe water, rest, current task, and recent exchanges persist with the entity. Existing spirit profession items remain for compatibility, but fixed spirit catalogues and profession conversion are disabled for village villagers.
 - Eight wandering trader identities each have a matching robe and a 36-row pool (35 goods plus its matching campfire). Each visit carries 13 core offers: four fixed staples, four sampled supplies, three equipment/components, one standout and the campfire. Sampling is without duplicates and stable from the saved trader UUID and actual theme. The independent one-use village-starter offer still costs two matching spirits for two profession-assigned eggs; a native surveyed Font map can add another listing. See [wandering pool and stock](docs/wandering-pool.md).
-- Ordinary scheduled wandering traders pitch a theme-coloured travelling awning on a tall camp post, stay near their camp, and leave after ten game-time minutes (12,000 ticks) or when no offers remain. Pick up and re-place the linked post to send its trader to a new camp. The compact cloth shelter has connected front stakes and a crossbar, not a counter or goods display.
+- Ordinary scheduled wandering traders pitch a theme-coloured travelling awning on a tall camp post, stay near their camp, and leave after seven game-time days (168,000 ticks) or when no offers remain. Pick up and re-place the linked post to send its trader to a new camp. The compact cloth shelter has connected front stakes and a crossbar, not a counter or goods display.
 - Plague Doctors draw eight unique oddities from a 48-item mixed-spirit cabinet. Each doctor keeps its stock for one day, then rolls a fresh catalogue at dawn; missing optional-mod goods are skipped safely.
 - `data/better_spirit_commerce/spiritcommerce/spirit_economy_policy.json` retains acquisition rules, retired IDs and legacy declarations (245 profession / 91 former wandering / 42 Doctor rows); derived Tempo entries give 280 legacy profession rows and 48 Doctor oddities. The separately validated `wandering_pool.json` owns all **288 active wandering pool rows**, their 1–64 spirit prices, selection buckets and explicit finite commodity ceilings. `EconomyPolicy.wanderingRows` exposes that active pool rather than the former 91-row declaration.
 - Create Deco coins and coin stacks, emerald-priced merchant offers, the old purse/wallet, and superseded Malum harvesting equipment are removed, inert, or hidden. At recipe reload, `CoinRecipeFilter` removes retired recipe IDs and the `better_spirit_commerce:spirit_refinement/` family, rewrites exact ordinary Malum spirit IDs to the regional currency identities, and filters retired-item outputs; it is not a blanket non-kill spirit-output rejection.
@@ -27,30 +27,32 @@ Run `./gradlew verifyFull stageRuntimeJar` before committing or pushing.
 
 ## Ordinary trader arrival
 
-Ordinary wandering-trader admission has no initial, intervisit or failed-site retry time gate.
-A living non-spectator Overworld player must carry at least ten total commerce spirits. Loose
-inventory is sufficient; native Spirit Pouch contents
-also count, including equipped noncosmetic Curios storage, but a pouch is never required. Existing
-gamerule and safe-site rules remain. One ordinary camp may occupy the 256-block region around an
-eligible anchor or its relocated post; distant players can independently meet traders. Occupancy
-lasts at most 12,000 game ticks from actual arrival, never renewed by stock checks or reloads.
-Departure is not an arrival cooldown. Unloaded expired camps stop blocking admission; their saved
-traders/posts/scenic fires retire when loaded without force-loading terrain for cleanup.
+Ordinary wandering-trader eligibility requires a non-spectator Overworld player, enabled
+`doTraderSpawning` and `doMobSpawning` gamerules, and `wanderingTrader.recurringVisits = true`.
+No carried spirits, pouch, village or nearby-camp exclusion is required. Safe-site rules remain.
+One world-wide saved schedule rolls a uniformly random interval of 120,000–216,000 ticks
+(five to nine game-time days), initially from the first eligible check and thereafter from each
+successful arrival. Existing camps do not block due arrivals, so visits may overlap. Each visit
+lasts until all offers run out or its immutable 168,000-tick deadline (seven game-time days).
+Departure neither resets nor accelerates the arrival schedule. Failed placement leaves the visit
+pending and retries every 1,200 ticks (one minute), without rerolling the multi-day interval.
+Schedule, retry and visit deadlines persist across reloads. Days use elapsed game time: sleep and
+`/time` do not advance them. Inactive legacy v1/v2 schedules initialize a new five-to-nine-day
+wait; existing camps retain their already-saved expiry. Unloaded expired camps and their saved
+traders/posts/scenic fires retire without force-loading terrain for cleanup.
 
 Selection uses 85% recent actual spirit-pickup history (square-root dampened) across all eight
 identities and 15% completely uniform choice across all eight. With no usable history it is uniform.
 A surprise market need not match the player's present funds; theme affordability never cancels
 arrival. Spending or merely holding a spirit
 does not manufacture pickup history. Ten game-time day buckets persist per player across dimensions;
-sleep and day-time commands do not accelerate the clock. Fair admission retains its separate event
-occurrence contract. The legacy schedule fixture APIs are not ordinary-admission authority and
-never delay visits.
+sleep and day-time commands do not accelerate the clock. Fair admission retains its separate event occurrence contract.
 The production native spawner searches ten already-loaded columns, retaining native placement,
 collision and biome checks and limiting the height difference to sixteen blocks. Failed native
 camp creation restores the prior native trader UUID and removes only its newly created trader and
 new, still-untamed companions leashed to that trader. Existing or player-owned entities are untouched.
 Native source tests invoke the actual public `WanderingTraderSpawner.tick` entry and cover native
-companion rollback, local admission, saved deadlines and departure. These isolated tests do not
+companion rollback, scheduled overlapping visits, saved deadlines, placement retries and departure. These isolated tests do not
 establish full-pack or real-network multiplayer acceptance.
 
 ## Spirit campfires

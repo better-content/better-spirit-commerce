@@ -19,7 +19,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 public final class WanderingTraderVisits {
     public static final String THEME_TAG = "better_spirit_commerce:wandering_trader_theme";
     static final String EXPIRY_TAG = "better_spirit_commerce:visit_expiry";
-    public static final long VISIT_TICKS = 12_000L;
+    public static final long VISIT_TICKS = 7L * 24_000L;
+    public static final int MIN_INTERVAL_TICKS = 5 * 24_000;
+    public static final int MAX_INTERVAL_TICKS = 9 * 24_000;
+    public static final int PLACEMENT_RETRY_TICKS = 1_200;
+
+    static int nextInterval(net.minecraft.util.RandomSource random) {
+        return MIN_INTERVAL_TICKS + random.nextInt(MAX_INTERVAL_TICKS - MIN_INTERVAL_TICKS + 1);
+    }
 
     private WanderingTraderVisits() {
     }
@@ -39,7 +46,7 @@ public final class WanderingTraderVisits {
 
     static ServerPlayer collectionAnchor(final java.util.List<ServerPlayer> players, final WanderingTrader trader) {
         return players.stream()
-                .filter(TraderAffordability::hasArrivalFunds)
+                .filter(player -> player.isAlive() && !player.isSpectator())
                 .min(Comparator.comparingDouble((ServerPlayer player) -> player.distanceToSqr(trader))
                         .thenComparing(ServerPlayer::getUUID))
                 .orElse(null);
@@ -77,6 +84,11 @@ public final class WanderingTraderVisits {
         final long gameTime = level.getGameTime();
         TraderCampService.expireOrdinaryVisits(level);
         if (level.players().stream().noneMatch(player -> eligibleAnchor(level, player))) return 0;
+        final WanderingTraderScheduleData schedule = WanderingTraderScheduleData.get(level);
+        if (!schedule.initialized()) schedule.initializeIfNeeded(gameTime, nextInterval(level.random));
+        if (!schedule.isVisitDue(gameTime)) return 0;
+        // A failed site keeps this arrival pending; never roll another multi-day interval.
+        schedule.scheduleRetry(gameTime, PLACEMENT_RETRY_TICKS);
         final UUID previousId = levelData.getWanderingTraderId();
         final java.util.Set<UUID> before = new java.util.HashSet<>();
         level.getAllEntities().forEach(entity -> before.add(entity.getUUID()));
@@ -110,6 +122,7 @@ public final class WanderingTraderVisits {
             return 0;
         }
         TraderCampData.forTrader(trader).begin(anchor.getUUID(), anchor.blockPosition(), gameTime + VISIT_TICKS);
+        schedule.completeVisit(gameTime, nextInterval(level.random), trader.getUUID());
         if (EconomyConfig.wanderingTraderAnnounceArrival()) {
             announceArrival(level, trader, theme);
         }
@@ -123,12 +136,7 @@ public final class WanderingTraderVisits {
     }
 
     static boolean eligibleAnchor(ServerLevel level, ServerPlayer player) {
-        if (!TraderAffordability.hasArrivalFunds(player)) return false;
-        for (UUID id : TraderCampData.ordinaryTraderIds(level)) {
-            TraderCampData camp = TraderCampData.ordinary(level, id);
-            if (camp.belongsTo(id) && !camp.expired(level.getGameTime()) && camp.near(player.blockPosition())) return false;
-        }
-        return true;
+        return !player.isSpectator();
     }
 
     private static void rollbackSpawn(ServerLevel level, ServerLevelData data, UUID previous,

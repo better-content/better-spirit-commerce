@@ -8,7 +8,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 
 public final class WanderingTraderScheduleData extends SavedData {
     private static final String DATA_NAME = "better_spirit_commerce_wandering_trader";
-    private static final int SCHEMA_VERSION = 2;
+    private static final int SCHEMA_VERSION = 3;
 
     private boolean initialized;
     private long nextAttemptGameTime;
@@ -25,10 +25,11 @@ public final class WanderingTraderScheduleData extends SavedData {
 
     public static WanderingTraderScheduleData load(final CompoundTag tag) {
         final WanderingTraderScheduleData data = new WanderingTraderScheduleData();
-        data.initialized = tag.getBoolean("Initialized");
+        // v1/v2 timers were inactive under immediate admission; start a fresh bounded schedule.
+        data.initialized = tag.getInt("SchemaVersion") >= SCHEMA_VERSION && tag.getBoolean("Initialized");
         data.nextAttemptGameTime = tag.getLong("NextAttemptGameTime");
         data.nextThemeIndex = tag.getInt("NextThemeIndex");
-        if (tag.getInt("SchemaVersion") >= SCHEMA_VERSION) {
+        if (tag.getInt("SchemaVersion") >= 2) {
             data.nextCurrencyIdentity = tag.getString("NextCurrencyIdentity");
         } else {
             data.nextCurrencyIdentity = WanderingTraderTheme.fromIndex(data.nextThemeIndex).currencyIdentity().id();
@@ -59,6 +60,10 @@ public final class WanderingTraderScheduleData extends SavedData {
         initialized = true;
         nextAttemptGameTime = gameTime + initialDelay;
         setDirty();
+    }
+
+    public boolean initialized() {
+        return initialized;
     }
 
     public boolean isVisitDue(final long gameTime) {

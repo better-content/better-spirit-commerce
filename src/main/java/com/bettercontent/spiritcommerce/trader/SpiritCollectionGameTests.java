@@ -102,7 +102,7 @@ public final class SpiritCollectionGameTests {
     }
 
     @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty")
-    public static void fundedAdmissionIgnoresOldInitialIntervalAndRetryDeadlines(GameTestHelper helper) {
+    public static void unfundedAdmissionHonorsSavedScheduleRetryAndSpectatorGameruleGates(GameTestHelper helper) {
         var level = helper.getLevel();
         var oldSchedule = WanderingTraderScheduleData.get(level);
         var oldCamp = TraderCampData.get(level);
@@ -114,10 +114,8 @@ public final class SpiritCollectionGameTests {
         boolean traderRule = rules.getBoolean(net.minecraft.world.level.GameRules.RULE_DO_TRADER_SPAWNING);
         boolean mobRule = rules.getBoolean(net.minecraft.world.level.GameRules.RULE_DOMOBSPAWNING);
         try {
-            CompoundTag oldTimers = new CompoundTag();
-            oldTimers.putBoolean("Initialized", true);
-            oldTimers.putLong("NextAttemptGameTime", Long.MAX_VALUE);
-            storage.set("better_spirit_commerce_wandering_trader", WanderingTraderScheduleData.load(oldTimers));
+            var schedule = new WanderingTraderScheduleData();
+            storage.set("better_spirit_commerce_wandering_trader", schedule);
             storage.set("better_spirit_commerce_trader_camp", new TraderCampData());
             rules.getRule(net.minecraft.world.level.GameRules.RULE_DO_TRADER_SPAWNING).set(true, level.getServer());
             rules.getRule(net.minecraft.world.level.GameRules.RULE_DOMOBSPAWNING).set(true, level.getServer());
@@ -126,11 +124,33 @@ public final class SpiritCollectionGameTests {
             WanderingTraderVisits.SpawnAttempt failedSite = ignored -> { attempts[0]++; return false; };
             var levelData = (net.minecraft.world.level.storage.ServerLevelData) level.getLevelData();
             WanderingTraderVisits.tickScheduledVisit(level, levelData, failedSite);
-            helper.assertTrue(attempts[0] == 0, "No spirits must block even the site search");
-            player.getInventory().setItem(0, new ItemStack(CurrencyItems.item(CurrencyIdentity.WORK).get(), 10));
+            long now = level.getGameTime();
+            long initial = schedule.nextAttemptGameTime();
+            helper.assertTrue(attempts[0] == 0 && initial >= now + WanderingTraderVisits.MIN_INTERVAL_TICKS
+                    && initial <= now + WanderingTraderVisits.MAX_INTERVAL_TICKS, "Initial arrival must wait 5–9 days");
+            schedule.scheduleRetry(now, 0);
+            player.setGameMode(GameType.SPECTATOR);
             WanderingTraderVisits.tickScheduledVisit(level, levelData, failedSite);
+            helper.assertTrue(attempts[0] == 0, "Spectator admitted an arrival");
+            player.setGameMode(GameType.SURVIVAL);
+            for (var rule : List.of(net.minecraft.world.level.GameRules.RULE_DO_TRADER_SPAWNING,
+                    net.minecraft.world.level.GameRules.RULE_DOMOBSPAWNING)) {
+                rules.getRule(rule).set(false, level.getServer());
+                WanderingTraderVisits.tickScheduledVisit(level, levelData, failedSite);
+                helper.assertTrue(attempts[0] == 0, "Disabled gamerule admitted an arrival");
+                rules.getRule(rule).set(true, level.getServer());
+            }
             WanderingTraderVisits.tickScheduledVisit(level, levelData, failedSite);
-            helper.assertTrue(attempts[0] == 2, "Ten loose spirits must bypass saved deadlines and retry without a cooldown");
+            helper.assertTrue(attempts[0] == 1 && schedule.nextAttemptGameTime() == now + 1200,
+                    "Empty inventory must admit due visit; failed placement must retry in one minute");
+            var loaded = WanderingTraderScheduleData.load(schedule.save(new CompoundTag()));
+            storage.set("better_spirit_commerce_wandering_trader", loaded);
+            WanderingTraderVisits.tickScheduledVisit(level, levelData, failedSite);
+            helper.assertTrue(attempts[0] == 1, "Reload lost retry deadline");
+            loaded.scheduleRetry(now, 0);
+            WanderingTraderVisits.tickScheduledVisit(level, levelData, failedSite);
+            helper.assertTrue(attempts[0] == 2 && loaded.nextAttemptGameTime() == now + 1200,
+                    "Pending placement did not retry, or rerolled multi-day interval");
         } finally {
             level.players().remove(player);
             storage.set("better_spirit_commerce_wandering_trader", oldSchedule);

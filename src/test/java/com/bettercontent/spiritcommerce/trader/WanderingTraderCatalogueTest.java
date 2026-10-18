@@ -6,6 +6,6 @@ import org.junit.jupiter.api.Test;
 final class WanderingTraderCatalogueTest {
     @Test void catalogueOwnsEightThemesAndThirteenRowsEach() {
         assertEquals(8, WanderingTraderCatalogue.themeCount());
-        assertEquals(104, WanderingTraderCatalogue.authoredRowCount());
+        assertEquals(112, WanderingTraderCatalogue.authoredRowCount());
     }
 }

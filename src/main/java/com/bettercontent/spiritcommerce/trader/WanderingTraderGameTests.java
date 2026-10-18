@@ -171,7 +171,7 @@ public final class WanderingTraderGameTests {
             String profession = eggOffer == null ? "" : eggOffer.getResult().getOrCreateTagElement("EntityTag")
                     .getCompound("VillagerData").getString("profession");
             String expectedProfession = SpiritProfessions.definition(theme.spirit()).profession().getId().toString();
-            if (offers.size() != 14 + fontMaps || fontMaps > 1 || eggs != 1
+            if (offers.size() != 15 + fontMaps || fontMaps > 1 || eggs != 1
                     || !matchingPayment || !expectedProfession.equals(profession)) {
                 helper.fail("Invalid " + theme.id() + " market: offers=" + offers.size()
                         + " eggs=" + eggs + " fontMaps=" + fontMaps

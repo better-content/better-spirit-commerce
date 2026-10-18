@@ -95,6 +95,10 @@ public final class TraderCampService {
     }
 
     static void retarget(final WanderingTrader trader, final BlockPos post, final Direction facing) {
+        if (trader.getPersistentData().contains(CAMP_POS_TAG)
+                && (trader.getPersistentData().getLong(CAMP_POS_TAG) != post.asLong() || facing(trader) != facing)) {
+            TraderCampFireService.remove((ServerLevel) trader.level(), TraderCampData.forTrader(trader), trader.getUUID());
+        }
         trader.getPersistentData().putLong(CAMP_POS_TAG, post.asLong());
         trader.getPersistentData().putString(CAMP_FACING_TAG, facing.getName());
         trader.getPersistentData().remove(STUCK_TICKS_TAG);
@@ -166,6 +170,7 @@ public final class TraderCampService {
     static void depart(final WanderingTrader trader, final ServerLevel level) {
         TraderCampData camp = TraderCampData.forTrader(trader);
         boolean fair = SpiritFairVisits.isFair(trader);
+        TraderCampFireService.remove(level, camp, trader.getUUID());
         BlockPos postPos = fair && camp.belongsTo(trader.getUUID()) ? camp.targetPos()
                 : BlockPos.of(trader.getPersistentData().getLong(CAMP_POS_TAG));
         ServerLevel campLevel = fair ? level.getServer().overworld() : level;

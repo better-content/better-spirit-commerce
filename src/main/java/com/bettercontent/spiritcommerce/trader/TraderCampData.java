@@ -15,6 +15,7 @@ public final class TraderCampData extends SavedData {
     private String dimension = "minecraft:overworld";
     private long targetPos;
     private String facing = Direction.NORTH.getName();
+    @Nullable private BlockPos firePos;
     private final java.util.Map<UUID, TraderCampData> visits = new java.util.HashMap<>();
     private TraderCampData owner;
 
@@ -56,6 +57,7 @@ public final class TraderCampData extends SavedData {
         if (tag.hasUUID("Trader")) data.traderId = tag.getUUID("Trader");
         if (tag.contains("Dimension")) data.dimension = tag.getString("Dimension");
         data.targetPos = tag.getLong("TargetPos");
+        if (tag.contains("FirePos", net.minecraft.nbt.Tag.TAG_LONG)) data.firePos = BlockPos.of(tag.getLong("FirePos"));
         if (tag.contains("Facing")) data.facing = tag.getString("Facing");
         for (var entry : tag.getList("Visits", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
             CompoundTag stored = (CompoundTag) entry;
@@ -72,6 +74,7 @@ public final class TraderCampData extends SavedData {
         if (traderId != null) tag.putUUID("Trader", traderId);
         tag.putString("Dimension", dimension);
         tag.putLong("TargetPos", targetPos);
+        if (firePos != null) tag.putLong("FirePos", firePos.asLong());
         tag.putString("Facing", facing);
         net.minecraft.nbt.ListTag storedVisits = new net.minecraft.nbt.ListTag();
         visits.forEach((id, visit) -> {
@@ -84,10 +87,19 @@ public final class TraderCampData extends SavedData {
     }
 
     public void setTarget(final UUID trader, final String dimension, final BlockPos pos, final Direction facing) {
+        if (!trader.equals(traderId) || !dimension.equals(this.dimension) || pos.asLong() != targetPos
+                || !facing.getName().equals(this.facing)) firePos = null;
         traderId = trader;
         this.dimension = dimension;
         targetPos = pos.asLong();
         this.facing = facing.getName();
+        setDirty();
+        if (owner != null) owner.setDirty();
+    }
+
+    @Nullable public BlockPos firePos() { return firePos; }
+    public void setFirePos(@Nullable BlockPos pos) {
+        firePos = pos == null ? null : pos.immutable();
         setDirty();
         if (owner != null) owner.setDirty();
     }
@@ -104,6 +116,7 @@ public final class TraderCampData extends SavedData {
     public void clear(final UUID trader) {
         if (belongsTo(trader) || owner != null && owner.visits.get(trader) == this) {
             traderId = null;
+            firePos = null;
             setDirty();
             if (owner != null) {
                 owner.visits.remove(trader);

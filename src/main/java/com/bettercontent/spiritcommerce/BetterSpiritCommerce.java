@@ -45,6 +45,7 @@ public final class BetterSpiritCommerce {
         LocalMarketNetwork.register();
         ResidentNetwork.register();
         PlayerStallNetwork.register();
+        com.bettercontent.spiritcommerce.trader.SpiritCampfires.register(modBus);
         TraderCampRegistries.register(modBus);
         PlayerStallRegistries.register(modBus);
         SpiritProfessions.register(modBus);
@@ -69,6 +70,8 @@ public final class BetterSpiritCommerce {
 
     private void registerGameTests(RegisterGameTestsEvent event) {
         event.register(WanderingTraderGameTests.class);
+        event.register(com.bettercontent.spiritcommerce.trader.SpiritCampfireGameTests.class);
+        event.register(com.bettercontent.spiritcommerce.trader.SpiritCollectionGameTests.class);
         event.register(com.bettercontent.spiritcommerce.trader.SpiritFairGameTests.class);
         event.register(SpiritPouchGameTests.class);
         event.register(ResidentGameTests.class);

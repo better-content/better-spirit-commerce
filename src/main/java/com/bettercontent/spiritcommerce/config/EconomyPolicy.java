@@ -32,7 +32,7 @@ public final class EconomyPolicy {
     public static List<WanderingRow> wanderingRows(final SpiritKind spirit) { return WANDERERS.get(spirit); }
     public static List<PlagueDoctorRow> plagueDoctorRows() { return java.util.stream.Stream.concat(DOCUMENT.plagueDoctorRows().stream(), tempoDoctorRows().stream()).toList(); }
     public static int villagerRowCount() { return 280; }
-    public static int wanderingRowCount() { return 104; }
+    public static int wanderingRowCount() { return WANDERERS.values().stream().mapToInt(List::size).sum(); }
     public static int plagueDoctorRowCount() { return 48; }
 
     private static Document load() {
@@ -131,8 +131,11 @@ public final class EconomyPolicy {
     private static Map<SpiritKind, List<WanderingRow>> groupWanderers() {
         Map<SpiritKind, List<WanderingRow>> rows = new EnumMap<>(SpiritKind.class);
         for (SpiritKind kind : SpiritKind.values()) {
-            rows.put(kind, kind == SpiritKind.TEMPO ? tempoWanderingRows()
+            var goods = new java.util.ArrayList<>(kind == SpiritKind.TEMPO ? tempoWanderingRows()
                     : DOCUMENT.wanderingRows().stream().filter(row -> row.kind() == kind).toList());
+            goods.add(new WanderingRow(kind.id(), 1,
+                    new StackSpec("better_spirit_commerce:" + kind.id() + "_campfire", 1), 16, 0));
+            rows.put(kind, List.copyOf(goods));
         }
         return Map.copyOf(rows);
     }

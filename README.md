@@ -6,26 +6,73 @@ This repository owns its mod-specific behavior and authoring inputs. Read [local
 and the [shared documentation/policy index](../../better-content-modpack/docs/README.md).
 
 
-Forge 1.20.1 mod making Malum spirits the pack's player-effort currency and village identity system.
+Forge 1.20.1 mod providing player-effort spirit currency, themed wandering merchants, and a separate resident-village barter system.
+
+Wandering spirit commerce and economy-driven villages are separate gameplay systems. Spirit traders
+sell authored goods for spirits; resident barter and production do not supply or govern their
+catalogues. Read [System boundaries](docs/commerce-systems.md) before catalogue or economy work.
 
 - Commerce has eight identities: sacred, wicked, arcane, aerial, aqueous, earthen, infernal, and Tempo. Eldritch and umbral spirits retain their special Malum roles and never appear in trade.
 - A living entity releases spirits only when the kill is credited to a player, that player's projectile or spell, or an owned creature. Spawner-origin mobs, villagers, traders, guards, golems, and players release none.
 - Existing Malum mappings retain their authored drops. Any otherwise-unmapped hostile deterministically releases two ordinary spirits. Both paths spawn Malum's floating, homing `SpiritItemEntity`; no harvesting tool is required.
 - Village residents barter from personal supplies and nearby recipes. Their stock, food, safe water, rest, current task, and recent exchanges persist with the entity. Existing spirit profession items remain for compatibility, but fixed spirit catalogues and profession conversion are disabled for village villagers.
-- Eight wandering trader identities each have a matching robe, 13 fixed goods, and one one-use offer of two matching spirits for two eggs already assigned to the corresponding profession.
+- Eight wandering trader identities each have a matching robe, 14 fixed goods (including a matching spirit campfire), and one one-use offer of two matching spirits for two eggs already assigned to the corresponding profession.
 - Scheduled wandering traders pitch a theme-coloured travelling awning on a tall camp post, stay near their camp, and leave when no offers remain. Pick up and re-place the linked post to send its trader to a new camp. The compact cloth shelter has connected front stakes and a crossbar, not a counter or goods display.
 - Plague Doctors draw eight unique oddities from a 48-item mixed-spirit cabinet. Each doctor keeps its stock for one day, then rolls a fresh catalogue at dawn; missing optional-mod goods are skipped safely.
-- `data/better_spirit_commerce/spiritcommerce/spirit_economy_policy.json` is the loaded and validated base policy for acquisition rules, catalogue rows, and retired item IDs. `EconomyPolicy` derives the Tempo rows in code, giving effective totals of 280 villager catalogue rows, 104 wandering goods, and 48 Plague Doctor oddities. The base JSON itself contains 245/91/42 rows; those are not the effective totals.
+- `data/better_spirit_commerce/spiritcommerce/spirit_economy_policy.json` is the loaded and validated base policy for acquisition rules, catalogue rows, and retired item IDs. `EconomyPolicy` derives the Tempo rows and eight campfire offers in code, giving effective totals of 280 villager catalogue rows, 112 wandering goods, and 48 Plague Doctor oddities. The base JSON itself contains 245/91/42 rows; those are not the effective totals.
 - Create Deco coins and coin stacks, emerald-priced merchant offers, the old purse/wallet, and superseded Malum harvesting equipment are removed, inert, or hidden. At recipe reload, `CoinRecipeFilter` removes retired recipe IDs and the `better_spirit_commerce:spirit_refinement/` family, rewrites exact ordinary Malum spirit IDs to the regional currency identities, and filters retired-item outputs; it is not a blanket non-kill spirit-output rejection.
 - Malum's native Spirit Pouch is the specialist storage surface. Its pack recipe costs exactly three leather and two string.
 
 Run `./gradlew verifyFull stageRuntimeJar` before committing or pushing.
 
+## Ordinary trader arrival
+
+Ordinary wandering-trader admission has no initial, intervisit or failed-site retry time gate.
+A living non-spectator Overworld player must carry at least ten total commerce spirits and afford
+at least one good in the chosen market. Loose inventory is sufficient; native Spirit Pouch contents
+also count, including equipped noncosmetic Curios storage, but a pouch is never required. Existing
+single-active-trader, gamerule and safe-site rules remain, including an unloaded linked trader camp.
+
+Among payable themes, selection uses 85% recent actual spirit-pickup history (square-root dampened)
+and 15% uniform choice. With no usable history it is uniform. Spending or merely holding a spirit
+does not manufacture pickup history. Ten game-time day buckets persist per player across dimensions;
+sleep and day-time commands do not accelerate the clock. Fair admission retains its separate event
+occurrence contract. Legacy saved schedule APIs remain available to existing camp/Fair fixtures
+but do not delay ordinary visits.
+
+## Spirit campfires
+
+Each wandering market sells its matching campfire for **one corresponding commerce spirit**, with sixteen
+available per visit and no crafting recipe. Purchased campfires are placeable and drop themselves when
+normally broken. Their flame, embers and smoke use the existing market/awning palette; normal and soul
+campfires are unchanged. Native cooking, waterlogging, shovel extinguishing and relighting remain available.
+Spirit flames cause no contact damage.
+
+Settled Commerce-managed traders (including Fair visitors) place one campfire beside their stand position on
+loaded, supported, empty terrain. Camp ownership is persisted separately from purchased items. Moving the
+camp, walking away, departure and death retire its scenery without item drops. Obsolete unloaded fires
+validate their owner/target when loaded again; no terrain is force-loaded for cleanup. Player replacement
+blocks and purchased fires are never removed. Missing safe space means no fire rather than terrain edits.
+
+The pack supplies sixteen Advanced Chimneys emitter definitions (normal/signal variants for each theme).
+With that optional mod loaded, its colored, colliding smoke is the sole smoke stream; the standalone fallback
+uses tinted native campfire smoke. A narrow optional client mixin suppresses poisoning only for replacement
+smoke originating at a spirit campfire, remembering that identity for the particle lifetime. Ordinary chimney
+poisoning is unchanged. Smoke routed through a third-party chimney retains that outlet's behavior.
+Advanced Chimneys already uses ForgeEndertech wind, and Weather2 has a general particle wind pass; this mod
+adds no wind force. The source gate inspects the exact pinned native bytecode contracts, but combined wind,
+shader appearance, smoke density and real audiovisual acceptance still require a separately authorized client run.
+
+`python3 -B scripts/generate_spirit_campfire_assets.py /path/to/1.20.1/client-extra.jar` reproduces the
+committed models, tags and grayscale animated flame/log textures using GraphicsMagick. These textures are
+derived from vanilla Minecraft 1.20.1 assets and are not independently original artwork. Native GameTests cover
+ownership, persisted block-entity identity, scenic/purchased drops, replacement safety and one-spirit offers.
+
 ## Optional Spirit Fair
 
 When Better Celestial Events is installed, its server-authoritative Spirit Fair night admits one
 **additional** themed wandering trader and camp near a living, non-spectator Overworld player.
-The ordinary trader schedule and village residents are unchanged. The Fair rotates the existing
+The Fair does not alter ordinary trader admission or village residents. It rotates the existing
 themes with its own saved cursor and uses their normal catalogue, prices and finite stock: no
 new currency, discounts, gates or restocking. Both trader-spawning and mob-spawning gamerules
 apply. Searches use already-loaded, collision-free supported terrain and retry at most once per

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 final class EconomyPolicyTest {
     @Test void centralPolicyOwnsAllCommerceRowsAndRetiredItems() {
         assertEquals(280, EconomyPolicy.villagerRowCount());
-        assertEquals(104, EconomyPolicy.wanderingRowCount());
+        assertEquals(112, EconomyPolicy.wanderingRowCount());
         assertEquals(48, EconomyPolicy.plagueDoctorRowCount());
         assertEquals(24, EconomyPolicy.retiredItems().size());
         assertTrue(EconomyPolicy.isRetired(new ResourceLocation("createdeco:copper_coin")));
@@ -23,7 +23,7 @@ final class EconomyPolicyTest {
         assertEquals(8, SpiritKind.values().length);
         for (SpiritKind kind : SpiritKind.values()) {
             assertEquals(35, EconomyPolicy.villagerRows(kind).size());
-            assertEquals(13, EconomyPolicy.wanderingRows(kind).size());
+            assertEquals(14, EconomyPolicy.wanderingRows(kind).size());
             assertEquals(6, EconomyPolicy.plagueDoctorRows().stream().filter(row -> row.kind() == kind).count());
         }
         assertTrue(EconomyPolicy.plagueDoctorRows().stream()

@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "better_spirit_commerce:sacred_campfire",
+    "better_spirit_commerce:wicked_campfire",
+    "better_spirit_commerce:arcane_campfire",
+    "better_spirit_commerce:aerial_campfire",
+    "better_spirit_commerce:aqueous_campfire",
+    "better_spirit_commerce:earthen_campfire",
+    "better_spirit_commerce:infernal_campfire",
+    "better_spirit_commerce:tempo_campfire"
+  ]
+}

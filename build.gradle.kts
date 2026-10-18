@@ -209,6 +209,10 @@ dependencies {
     compileOnly(fg.deobf("curse.maven:pollution-of-the-realms-269973:8554528"))
     compileOnly(fg.deobf("curse.maven:little-logistics-570050:4799459"))
     compileOnly(fg.deobf("curse.maven:weather-storms-tornadoes-237746:5244118"))
+    // Native bytecode contracts for the optional campfire smoke integration, not runtime requirements.
+    testRuntimeOnly(fg.deobf("curse.maven:advanced-chimneys-244830:8499852"))
+    testRuntimeOnly(fg.deobf("curse.maven:forgeendertech-244844:8554308"))
+    testRuntimeOnly(fg.deobf("curse.maven:weather-storms-tornadoes-237746:5244118"))
     compileOnly(fg.deobf("curse.maven:creativecore-257814:7649757"))
     compileOnly(fg.deobf("curse.maven:ambientsounds-254284:7550220"))
     compileOnly(fg.deobf("curse.maven:oculus-581495:6020952"))

@@ -20,7 +20,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import java.util.Set;
 
-/** Eight fixed wandering markets. Each visit exposes thirteen goods plus its profession egg. */
+/** Eight fixed wandering markets. Each visit exposes fourteen goods plus its profession egg. */
 public final class WanderingTraderCatalogue {
     private WanderingTraderCatalogue() {}
 

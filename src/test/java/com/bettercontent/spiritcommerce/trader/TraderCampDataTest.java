@@ -29,6 +29,23 @@ final class TraderCampDataTest {
     }
 
     @Test
+    void firePositionPersistsButRelocationOrDepartureInvalidatesIt() {
+        UUID trader = UUID.randomUUID();
+        TraderCampData data = new TraderCampData();
+        BlockPos post = new BlockPos(10, 65, 10);
+        BlockPos fire = post.east(2);
+        data.setTarget(trader, "minecraft:overworld", post, Direction.NORTH);
+        data.setFirePos(fire);
+        TraderCampData loaded = TraderCampData.load(data.save(new CompoundTag()));
+        assertEquals(fire, loaded.firePos());
+        loaded.setTarget(trader, "minecraft:overworld", post.east(20), Direction.NORTH);
+        assertEquals(null, loaded.firePos(), "An unloaded old fire must become obsolete on retarget");
+        loaded.setFirePos(fire);
+        loaded.clear(trader);
+        assertEquals(null, loaded.firePos());
+    }
+
+    @Test
     void clearOnlyRemovesTheMatchingTraderLink() {
         UUID trader = UUID.fromString("843c67c3-7eb8-4f47-8b14-646c7c13aade");
         TraderCampData data = new TraderCampData();

@@ -23,6 +23,7 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
     private long fairStart;
     private long fairEnd;
     private long fairOccurrence;
+    private long visitExpiry;
 
     public TraderCampPostBlockEntity(final BlockPos pos, final BlockState state) {
         super(TraderCampRegistries.POST_ENTITY.get(), pos, state);
@@ -32,6 +33,7 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
         traderId = trader.getUUID();
         themeId = theme.id();
         spiritFair = SpiritFairVisits.isFair(trader);
+        visitExpiry = trader.getPersistentData().getLong(WanderingTraderVisits.EXPIRY_TAG);
         fairStart = trader.getPersistentData().getLong(SpiritFairVisits.START_TAG);
         fairEnd = trader.getPersistentData().getLong(SpiritFairVisits.END_TAG);
         fairOccurrence = trader.getPersistentData().getLong(SpiritFairVisits.OCCURRENCE_TAG);
@@ -46,6 +48,7 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
         if (traderId != null) tag.putUUID(TRADER_TAG, traderId);
         tag.putString(THEME_TAG, themeId);
         tag.putBoolean("SpiritFair", spiritFair);
+        tag.putLong("VisitExpiry", visitExpiry);
         if (spiritFair) {
             tag.putLong("FairStart", fairStart);
             tag.putLong("FairEnd", fairEnd);
@@ -66,6 +69,7 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
         traderId = tag.hasUUID(TRADER_TAG) ? tag.getUUID(TRADER_TAG) : null;
         if (tag.contains(THEME_TAG)) themeId = tag.getString(THEME_TAG);
         spiritFair = tag.getBoolean("SpiritFair");
+        visitExpiry = tag.getLong("VisitExpiry");
         fairStart = tag.getLong("FairStart");
         fairEnd = tag.getLong("FairEnd");
         fairOccurrence = tag.getLong("FairOccurrence");
@@ -81,7 +85,13 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
     }
 
     boolean expireFairIfNeeded() {
-        if (!spiritFair || !(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) return false;
+        if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel)) return false;
+        if (!spiritFair) {
+            if (traderId == null || (visitExpiry == 0 || visitExpiry > serverLevel.getGameTime())
+                    && TraderCampData.hasOrdinaryVisit(serverLevel, traderId)) return false;
+            serverLevel.setBlock(worldPosition, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), 3);
+            return true;
+        }
         long time = serverLevel.getServer().overworld().getDayTime();
         if (time >= fairStart && time < fairEnd && serverLevel.dimension().equals(Level.OVERWORLD)
                 && !SpiritFairVisits.occurrenceEnded(serverLevel, fairOccurrence)
@@ -100,7 +110,7 @@ public final class TraderCampPostBlockEntity extends BlockEntity {
         }
         Entity entity = serverLevel.getEntity(traderId);
         if (entity == null) {
-            (spiritFair ? TraderCampData.fair(serverLevel, traderId) : TraderCampData.get(serverLevel)).setTarget(traderId,
+            (spiritFair ? TraderCampData.fair(serverLevel, traderId) : TraderCampData.ordinary(serverLevel, traderId)).setTarget(traderId,
                     serverLevel.dimension().location().toString(), worldPosition,
                     getBlockState().getValue(TraderCampPostBlock.FACING));
             return;

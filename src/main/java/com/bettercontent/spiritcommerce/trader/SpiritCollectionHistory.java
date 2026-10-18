@@ -52,12 +52,7 @@ public final class SpiritCollectionHistory extends SavedData {
     }
 
     public WanderingTraderTheme selectTheme(UUID player, long gameTime, RandomSource random) {
-        return selectTheme(player, gameTime, random, java.util.List.of(WanderingTraderTheme.values()));
-    }
-
-    public WanderingTraderTheme selectTheme(UUID player, long gameTime, RandomSource random,
-                                            java.util.List<WanderingTraderTheme> eligible) {
-        if (eligible.isEmpty()) throw new IllegalArgumentException("No affordable trader themes");
+        final var eligible = java.util.List.of(WanderingTraderTheme.values());
         double[] weights = weights(player, gameTime);
         double total = 0;
         for (WanderingTraderTheme theme : eligible) total += weights[theme.currencyIdentity().ordinal()];

@@ -25,6 +25,32 @@ public abstract class WanderingTraderSpawnerMixin {
     @Shadow
     protected abstract boolean spawn(ServerLevel level);
 
+    @Shadow @Final private net.minecraft.util.RandomSource random;
+
+    @Inject(method = "findSpawnPositionNear", at = @At("HEAD"), cancellable = true, require = 1)
+    private void betterContentEconomy$loadedLocalSite(net.minecraft.world.level.LevelReader reader,
+            net.minecraft.core.BlockPos anchor, int radius,
+            CallbackInfoReturnable<net.minecraft.core.BlockPos> callback) {
+        if (!(reader instanceof ServerLevel level)) { callback.setReturnValue(null); return; }
+        for (int attempt = 0; attempt < 10; attempt++) {
+            int x = anchor.getX() + random.nextInt(radius * 2) - radius;
+            int z = anchor.getZ() + random.nextInt(radius * 2) - radius;
+            // Include collision/camp margins before consulting the heightmap or native block checks.
+            if (!level.hasChunksAt(new net.minecraft.core.BlockPos(x - 6, anchor.getY(), z - 6),
+                    new net.minecraft.core.BlockPos(x + 6, anchor.getY(), z + 6))) continue;
+            int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, x, z);
+            net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, y, z);
+            if (Math.abs(y - anchor.getY()) > 16 || !level.getWorldBorder().isWithinBounds(pos)) continue;
+            if (net.minecraft.world.level.NaturalSpawner.isSpawnPositionOk(
+                    net.minecraft.world.entity.SpawnPlacements.Type.ON_GROUND, reader, pos,
+                    net.minecraft.world.entity.EntityType.WANDERING_TRADER)) {
+                callback.setReturnValue(pos);
+                return;
+            }
+        }
+        callback.setReturnValue(null);
+    }
+
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true, require = 1)
     private void betterContentEconomy$runRecurringVisitSchedule(
             final ServerLevel level,

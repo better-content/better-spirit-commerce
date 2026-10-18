@@ -56,8 +56,9 @@ public final class SpiritCampfireBlockEntity extends CampfireBlockEntity {
             if (time < fairStart || time >= fairEnd || SpiritFairVisits.occurrenceEnded(level, fairOccurrence)
                     || !TraderCampData.hasFairVisit(level, campOwner)) return false;
         }
-        TraderCampData data = fair ? TraderCampData.fair(level, campOwner) : TraderCampData.get(level);
-        if (!data.belongsTo(campOwner) || !level.dimension().location().toString().equals(data.dimension())
+        TraderCampData data = fair ? TraderCampData.fair(level, campOwner) : TraderCampData.ordinary(level, campOwner);
+        if (!data.belongsTo(campOwner) || !fair && data.expired(level.getGameTime())
+                || !level.dimension().location().toString().equals(data.dimension())
                 || !worldPosition.equals(data.firePos())) return false;
         if (level.hasChunkAt(data.targetPos())) {
             return level.getBlockEntity(data.targetPos()) instanceof TraderCampPostBlockEntity post

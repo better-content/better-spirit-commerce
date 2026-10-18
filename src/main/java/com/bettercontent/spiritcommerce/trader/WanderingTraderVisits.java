@@ -18,6 +18,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public final class WanderingTraderVisits {
     public static final String THEME_TAG = "better_spirit_commerce:wandering_trader_theme";
+    static final String EXPIRY_TAG = "better_spirit_commerce:visit_expiry";
+    public static final long VISIT_TICKS = 12_000L;
 
     private WanderingTraderVisits() {
     }
@@ -37,7 +39,7 @@ public final class WanderingTraderVisits {
 
     static ServerPlayer collectionAnchor(final java.util.List<ServerPlayer> players, final WanderingTrader trader) {
         return players.stream()
-                .filter(player -> !TraderAffordability.affordableThemes(player).isEmpty())
+                .filter(TraderAffordability::hasArrivalFunds)
                 .min(Comparator.comparingDouble((ServerPlayer player) -> player.distanceToSqr(trader))
                         .thenComparing(ServerPlayer::getUUID))
                 .orElse(null);
@@ -73,36 +75,41 @@ public final class WanderingTraderVisits {
         }
 
         final long gameTime = level.getGameTime();
-        final WanderingTraderScheduleData schedule = WanderingTraderScheduleData.get(level);
-        final UUID activeId = schedule.activeTraderId();
-        if (activeId != null) {
-            final Entity activeEntity = level.getEntity(activeId);
-            if (activeEntity instanceof WanderingTrader && activeEntity.isAlive()) return 0;
-            // An unloaded linked camp is still an active visit, not permission to duplicate it.
-            if (activeEntity == null && TraderCampData.get(level).belongsTo(activeId)) return 0;
-            schedule.clearActiveTrader();
+        TraderCampService.expireOrdinaryVisits(level);
+        if (level.players().stream().noneMatch(player -> eligibleAnchor(level, player))) return 0;
+        final UUID previousId = levelData.getWanderingTraderId();
+        final java.util.Set<UUID> before = new java.util.HashSet<>();
+        level.getAllEntities().forEach(entity -> before.add(entity.getUUID()));
+        if (!spawnAttempt.spawn(level)) {
+            rollbackSpawn(level, levelData, previousId, before);
+            return 0;
         }
-        if (level.players().stream().noneMatch(player -> !TraderAffordability.affordableThemes(player).isEmpty())) return 0;
-        if (!spawnAttempt.spawn(level)) return 0;
 
         final UUID traderId = levelData.getWanderingTraderId();
         final Entity spawnedEntity = traderId == null ? null : level.getEntity(traderId);
-        if (!(spawnedEntity instanceof WanderingTrader trader)) return 0;
+        if (!(spawnedEntity instanceof WanderingTrader trader) || before.contains(traderId)) {
+            rollbackSpawn(level, levelData, previousId, before);
+            return 0;
+        }
 
-        final ServerPlayer anchor = collectionAnchor(level, trader);
+        final ServerPlayer anchor = level.players().stream().filter(player -> eligibleAnchor(level, player))
+                .filter(player -> player.distanceToSqr(trader) <= 256.0D * 256.0D)
+                .min(Comparator.comparingDouble((ServerPlayer player) -> player.distanceToSqr(trader))
+                        .thenComparing(ServerPlayer::getUUID)).orElse(null);
         if (anchor == null) {
-            trader.discard();
+            rollbackSpawn(level, levelData, previousId, before);
             return 0;
         }
         final WanderingTraderTheme theme = SpiritCollectionHistory.get(level).selectTheme(
-                anchor.getUUID(), gameTime, level.random, TraderAffordability.affordableThemes(anchor));
+                anchor.getUUID(), gameTime, level.random);
+        trader.getPersistentData().putLong(EXPIRY_TAG, gameTime + VISIT_TICKS);
+        trader.setDespawnDelay((int) VISIT_TICKS);
         applyTheme(trader, theme, true);
         if (!TraderCampService.createForVisit(trader, theme)) {
-            trader.discard();
+            rollbackSpawn(level, levelData, previousId, before);
             return 0;
         }
-        // Legacy schedule fields remain readable, but no initial, interval or retry clock gates admission.
-        schedule.completeVisit(gameTime, 0, trader.getUUID());
+        TraderCampData.forTrader(trader).begin(anchor.getUUID(), anchor.blockPosition(), gameTime + VISIT_TICKS);
         if (EconomyConfig.wanderingTraderAnnounceArrival()) {
             announceArrival(level, trader, theme);
         }
@@ -111,8 +118,34 @@ public final class WanderingTraderVisits {
 
     public static ServerPlayer randomEligiblePlayer(final ServerLevel level) {
         final var eligible = level.players().stream()
-                .filter(player -> !TraderAffordability.affordableThemes(player).isEmpty()).toList();
+                .filter(player -> eligibleAnchor(level, player)).toList();
         return eligible.isEmpty() ? null : eligible.get(level.random.nextInt(eligible.size()));
+    }
+
+    static boolean eligibleAnchor(ServerLevel level, ServerPlayer player) {
+        if (!TraderAffordability.hasArrivalFunds(player)) return false;
+        for (UUID id : TraderCampData.ordinaryTraderIds(level)) {
+            TraderCampData camp = TraderCampData.ordinary(level, id);
+            if (camp.belongsTo(id) && !camp.expired(level.getGameTime()) && camp.near(player.blockPosition())) return false;
+        }
+        return true;
+    }
+
+    private static void rollbackSpawn(ServerLevel level, ServerLevelData data, UUID previous,
+                                      java.util.Set<UUID> before) {
+        UUID id = data.getWanderingTraderId();
+        Entity entity = id == null || before.contains(id) ? null : level.getEntity(id);
+        if (entity instanceof WanderingTrader trader) {
+            for (Entity candidate : level.getAllEntities()) {
+                if (!before.contains(candidate.getUUID())
+                        && candidate instanceof net.minecraft.world.entity.animal.horse.TraderLlama llama
+                        && !llama.isTamed() && llama.getOwnerUUID() == null
+                        && llama.getLeashHolder() == trader) llama.discard();
+            }
+            TraderCampData.forTrader(trader).clear(trader.getUUID());
+            trader.discard();
+        }
+        data.setWanderingTraderId(previous);
     }
 
     public static void applyTheme(

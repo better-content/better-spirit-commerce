@@ -92,21 +92,15 @@ final class SpiritCollectionHistoryTest {
     }
 
     @Test
-    void unaffordableThemesNeverLeakIntoEitherSelectionBranch() {
+    void themeSelectionDoesNotTakePresentFundsOrFilterSurpriseMarkets() {
         SpiritCollectionHistory data = new SpiritCollectionHistory();
         data.record(PLAYER, CurrencyIdentity.RENEWAL, 100, 0);
         data.record(PLAYER, CurrencyIdentity.WORK, 1, 0);
         RandomSource random = RandomSource.create(1919L);
-        var affordable = java.util.List.of(WanderingTraderTheme.ARCANE, WanderingTraderTheme.TEMPO);
-        boolean sawRandomTempo = false;
-        for (int i = 0; i < 10_000; i++) {
-            var theme = data.selectTheme(PLAYER, 0, random, affordable);
-            assertTrue(affordable.contains(theme));
-            if (theme == WanderingTraderTheme.TEMPO) sawRandomTempo = true;
-        }
-        assertTrue(sawRandomTempo, "Random branch must admit an affordable theme absent from collection history");
-        assertThrows(IllegalArgumentException.class,
-                () -> data.selectTheme(PLAYER, 0, random, java.util.List.of()));
+        var observed = java.util.EnumSet.noneOf(WanderingTraderTheme.class);
+        for (int i = 0; i < 10_000; i++) observed.add(data.selectTheme(PLAYER, 0, random));
+        assertEquals(java.util.EnumSet.allOf(WanderingTraderTheme.class), observed,
+                "Uniform surprises must include identities absent from pickup history/current matching funds");
     }
 
     @Test

@@ -97,7 +97,7 @@ public final class SpiritFairGameTests {
             UUID regularId = regular.getUUID();
             helper.assertTrue(TraderCampService.createForVisit(regular, WanderingTraderTheme.AQUEOUS),
                     "Ordinary camp fixture failed");
-            BlockPos ordinaryPost = TraderCampData.get(level).targetPos();
+            BlockPos ordinaryPost = TraderCampData.forTrader(regular).targetPos();
             net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(insertion);
             try {
                 helper.assertTrue(!SpiritFairVisits.tick(level, window, players), "Canceled insertion reported success");
@@ -181,7 +181,7 @@ public final class SpiritFairGameTests {
             helper.assertTrue(!level.addFreshEntity(reloaded) && reloaded.isRemoved(),
                     "Unloaded trader returned after dawn instead of expiring on native join");
             helper.assertTrue(regularId.equals(ordinary.activeTraderId()) && regular.isAlive()
-                            && TraderCampData.get(level).targetPos().equals(ordinaryPost)
+                            && TraderCampData.forTrader(regular).targetPos().equals(ordinaryPost)
                             && level.getBlockEntity(ordinaryPost) instanceof TraderCampPostBlockEntity,
                     "Fair departure affected ordinary trader");
             helper.assertTrue(!SpiritFairVisits.tick(level, window, players), "Dawn spawned expired occurrence");

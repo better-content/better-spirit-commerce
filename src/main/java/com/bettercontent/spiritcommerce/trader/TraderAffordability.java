@@ -17,6 +17,13 @@ public final class TraderAffordability {
 
     private TraderAffordability() { }
 
+    public static boolean hasArrivalFunds(ServerPlayer player) {
+        if (!player.isAlive() || player.isSpectator()) return false;
+        long total = 0;
+        for (long count : carriedSpirits(player)) total += count;
+        return total >= ARRIVAL_SPIRITS;
+    }
+
     public static List<WanderingTraderTheme> affordableThemes(ServerPlayer player) {
         if (!player.isAlive() || player.isSpectator()) return List.of();
         long[] counts = carriedSpirits(player);

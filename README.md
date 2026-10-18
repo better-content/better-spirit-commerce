@@ -17,7 +17,7 @@ catalogues. Read [System boundaries](docs/commerce-systems.md) before catalogue 
 - Existing Malum mappings retain their authored drops. Any otherwise-unmapped hostile deterministically releases two ordinary spirits. Both paths spawn Malum's floating, homing `SpiritItemEntity`; no harvesting tool is required.
 - Village residents barter from personal supplies and nearby recipes. Their stock, food, safe water, rest, current task, and recent exchanges persist with the entity. Existing spirit profession items remain for compatibility, but fixed spirit catalogues and profession conversion are disabled for village villagers.
 - Eight wandering trader identities each have a matching robe, 14 fixed goods (including a matching spirit campfire), and one one-use offer of two matching spirits for two eggs already assigned to the corresponding profession.
-- Scheduled wandering traders pitch a theme-coloured travelling awning on a tall camp post, stay near their camp, and leave when no offers remain. Pick up and re-place the linked post to send its trader to a new camp. The compact cloth shelter has connected front stakes and a crossbar, not a counter or goods display.
+- Ordinary scheduled wandering traders pitch a theme-coloured travelling awning on a tall camp post, stay near their camp, and leave after ten game-time minutes (12,000 ticks) or when no offers remain. Pick up and re-place the linked post to send its trader to a new camp. The compact cloth shelter has connected front stakes and a crossbar, not a counter or goods display.
 - Plague Doctors draw eight unique oddities from a 48-item mixed-spirit cabinet. Each doctor keeps its stock for one day, then rolls a fresh catalogue at dawn; missing optional-mod goods are skipped safely.
 - `data/better_spirit_commerce/spiritcommerce/spirit_economy_policy.json` is the loaded and validated base policy for acquisition rules, catalogue rows, and retired item IDs. `EconomyPolicy` derives the Tempo rows and eight campfire offers in code, giving effective totals of 280 villager catalogue rows, 112 wandering goods, and 48 Plague Doctor oddities. The base JSON itself contains 245/91/42 rows; those are not the effective totals.
 - Create Deco coins and coin stacks, emerald-priced merchant offers, the old purse/wallet, and superseded Malum harvesting equipment are removed, inert, or hidden. At recipe reload, `CoinRecipeFilter` removes retired recipe IDs and the `better_spirit_commerce:spirit_refinement/` family, rewrites exact ordinary Malum spirit IDs to the regional currency identities, and filters retired-item outputs; it is not a blanket non-kill spirit-output rejection.
@@ -28,17 +28,30 @@ Run `./gradlew verifyFull stageRuntimeJar` before committing or pushing.
 ## Ordinary trader arrival
 
 Ordinary wandering-trader admission has no initial, intervisit or failed-site retry time gate.
-A living non-spectator Overworld player must carry at least ten total commerce spirits and afford
-at least one good in the chosen market. Loose inventory is sufficient; native Spirit Pouch contents
+A living non-spectator Overworld player must carry at least ten total commerce spirits. Loose
+inventory is sufficient; native Spirit Pouch contents
 also count, including equipped noncosmetic Curios storage, but a pouch is never required. Existing
-single-active-trader, gamerule and safe-site rules remain, including an unloaded linked trader camp.
+gamerule and safe-site rules remain. One ordinary camp may occupy the 256-block region around an
+eligible anchor or its relocated post; distant players can independently meet traders. Occupancy
+lasts at most 12,000 game ticks from actual arrival, never renewed by stock checks or reloads.
+Departure is not an arrival cooldown. Unloaded expired camps stop blocking admission; their saved
+traders/posts/scenic fires retire when loaded without force-loading terrain for cleanup.
 
-Among payable themes, selection uses 85% recent actual spirit-pickup history (square-root dampened)
-and 15% uniform choice. With no usable history it is uniform. Spending or merely holding a spirit
+Selection uses 85% recent actual spirit-pickup history (square-root dampened) across all eight
+identities and 15% completely uniform choice across all eight. With no usable history it is uniform.
+A surprise market need not match the player's present funds; theme affordability never cancels
+arrival. Spending or merely holding a spirit
 does not manufacture pickup history. Ten game-time day buckets persist per player across dimensions;
 sleep and day-time commands do not accelerate the clock. Fair admission retains its separate event
-occurrence contract. Legacy saved schedule APIs remain available to existing camp/Fair fixtures
-but do not delay ordinary visits.
+occurrence contract. The legacy schedule fixture APIs are not ordinary-admission authority and
+never delay visits.
+The production native spawner searches ten already-loaded columns, retaining native placement,
+collision and biome checks and limiting the height difference to sixteen blocks. Failed native
+camp creation restores the prior native trader UUID and removes only its newly created trader and
+new, still-untamed companions leashed to that trader. Existing or player-owned entities are untouched.
+Native source tests invoke the actual public `WanderingTraderSpawner.tick` entry and cover native
+companion rollback, local admission, saved deadlines and departure. These isolated tests do not
+establish full-pack or real-network multiplayer acceptance.
 
 ## Spirit campfires
 
@@ -158,7 +171,7 @@ bettervillagers execute <uuid> <result_item_id> <result_count> <payment_item_id>
 
 ## Trader camp screenshots
 
-The non-shipping `visualServer` / `visualClient` configurations run a dedicated server and a real Forge client through the production block entity renderer. Prepare and freeze their JVM launch inputs under the shared Forge cache lock, then launch the prepared Java processes directly (under Xvfb when headless). Do not keep a Gradle server invocation holding the cache lock while trying to start a second Gradle client invocation. Every Gradle preparation/verification invocation holds the full-lifetime POSIX `fcntl.lockf` lock at `/home/dev/.worklane/forge-cache.lock`; `flock` is not interchangeable.
+The non-shipping `visualServer` / `visualClient` configurations run a dedicated server and a real Forge client through the production block entity renderer. Prepare and freeze their JVM launch inputs under the shared Forge cache lock, then launch the prepared Java processes directly (under Xvfb when headless). Do not keep a Gradle server invocation holding the cache lock while trying to start a second Gradle client invocation. Every Gradle preparation/verification invocation holds the full-lifetime POSIX `fcntl.lockf` lock at `/home/dev/better-content-modpack/.worklane/forge-cache.lock`; `flock` is not interchangeable.
 
 On first use, accept the Minecraft EULA in generated `run-visual-server/eula.txt`, and set `online-mode=false` and `enforce-secure-profile=false` in generated `server.properties` for the local offline `Dev` client. Register runtime/build/capture outputs before producing them and retain them across handoffs by default under the [shared retention policy](../../better-content-modpack/docs/policies/generated-data.md). Closing a review releases activity; it does not delete data. In the server console, run:
 

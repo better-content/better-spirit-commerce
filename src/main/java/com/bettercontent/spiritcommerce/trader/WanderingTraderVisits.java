@@ -20,8 +20,8 @@ public final class WanderingTraderVisits {
     public static final String THEME_TAG = "better_spirit_commerce:wandering_trader_theme";
     static final String EXPIRY_TAG = "better_spirit_commerce:visit_expiry";
     public static final long VISIT_TICKS = 7L * 24_000L;
-    public static final int MIN_INTERVAL_TICKS = 5 * 24_000;
-    public static final int MAX_INTERVAL_TICKS = 9 * 24_000;
+    public static final int MIN_INTERVAL_TICKS = 5 * 12_000;
+    public static final int MAX_INTERVAL_TICKS = 9 * 12_000;
     public static final int PLACEMENT_RETRY_TICKS = 1_200;
 
     static int nextInterval(net.minecraft.util.RandomSource random) {

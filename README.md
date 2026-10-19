@@ -30,14 +30,15 @@ Run `./gradlew verifyFull stageRuntimeJar` before committing or pushing.
 Ordinary wandering-trader eligibility requires a non-spectator Overworld player, enabled
 `doTraderSpawning` and `doMobSpawning` gamerules, and `wanderingTrader.recurringVisits = true`.
 No carried spirits, pouch, village or nearby-camp exclusion is required. Safe-site rules remain.
-One world-wide saved schedule rolls a uniformly random interval of 120,000–216,000 ticks
-(five to nine game-time days), initially from the first eligible check and thereafter from each
+One world-wide saved schedule rolls a uniformly random interval of 60,000–108,000 ticks
+(2.5 to 4.5 game-time days), initially from the first eligible check and thereafter from each
 successful arrival. Existing camps do not block due arrivals, so visits may overlap. Each visit
 lasts until all offers run out or its immutable 168,000-tick deadline (seven game-time days).
 Departure neither resets nor accelerates the arrival schedule. Failed placement leaves the visit
 pending and retries every 1,200 ticks (one minute), without rerolling the multi-day interval.
-Schedule, retry and visit deadlines persist across reloads. Days use elapsed game time: sleep and
-`/time` do not advance them. Inactive legacy v1/v2 schedules initialize a new five-to-nine-day
+Schedule, retry and visit deadlines persist across reloads. Already-saved arrival deadlines are
+unchanged by interval updates; the shorter interval applies to newly rolled waits. Days use elapsed game time: sleep and
+`/time` do not advance them. Inactive legacy v1/v2 schedules initialize a new 2.5-to-4.5-day
 wait; existing camps retain their already-saved expiry. Unloaded expired camps and their saved
 traders/posts/scenic fires retire without force-loading terrain for cleanup.
 

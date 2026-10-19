@@ -127,7 +127,7 @@ public final class SpiritCollectionGameTests {
             long now = level.getGameTime();
             long initial = schedule.nextAttemptGameTime();
             helper.assertTrue(attempts[0] == 0 && initial >= now + WanderingTraderVisits.MIN_INTERVAL_TICKS
-                    && initial <= now + WanderingTraderVisits.MAX_INTERVAL_TICKS, "Initial arrival must wait 5–9 days");
+                    && initial <= now + WanderingTraderVisits.MAX_INTERVAL_TICKS, "Initial arrival must wait 2.5–4.5 days");
             schedule.scheduleRetry(now, 0);
             player.setGameMode(GameType.SPECTATOR);
             WanderingTraderVisits.tickScheduledVisit(level, levelData, failedSite);

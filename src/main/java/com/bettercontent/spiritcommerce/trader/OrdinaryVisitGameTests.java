@@ -100,7 +100,7 @@ public final class OrdinaryVisitGameTests {
             long nextArrival = schedule.nextAttemptGameTime();
             helper.assertTrue(nextArrival >= level.getGameTime() + WanderingTraderVisits.MIN_INTERVAL_TICKS
                     && nextArrival <= level.getGameTime() + WanderingTraderVisits.MAX_INTERVAL_TICKS,
-                    "Successful arrival did not schedule 5–9 days ahead");
+                    "Successful arrival did not schedule 2.5–4.5 days ahead");
             helper.assertTrue(spawner.tick(level, true, true) == 0, "Scheduled interval bypassed");
             helper.assertTrue(WanderingTraderVisits.eligibleAnchor(level, near)
                     && WanderingTraderVisits.eligibleAnchor(level, far), "Camp occupancy still gates players");

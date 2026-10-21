@@ -19,6 +19,28 @@ class NativeDiagnosticsTest(unittest.TestCase):
         self.metadata = {'dist': 'DEDICATED_SERVER', 'mods': {'forge': '47.4.13'},
                          'corrections': {}, 'nonce': '018c0123-4567-489a-abcd-0123456789ab'}
 
+    def test_loader_defaults_are_bound_to_actual_uuid_run_not_other_paths(self):
+        run = d.ROOT / 'build/gametest/018c0123-4567-489a-abcd-0123456789ab'
+        metadata = dict(self.metadata, _run_directory=str(run))
+        logger = 'net.minecraftforge.fml.loading.FMLConfig/CORE'
+        current = f'Configuration file {run}/config/fml.toml is not correct. Correcting'
+        self.assertEqual('native-loader-first-defaults', d.classify('main', logger, current, metadata, None)[0])
+        for other in (d.ROOT / 'run-gametest', run.parent / 'other'):
+            message = f'Configuration file {other}/config/fml.toml is not correct. Correcting'
+            self.assertIsNone(d.classify('main', logger, message, metadata, None)[0])
+
+    def test_main_derives_run_context_instead_of_trusting_forged_metadata(self):
+        guard = d.ROOT / 'build/native-diagnostic-guard'; guard.mkdir(parents=True, exist_ok=True)
+        run = Path(tempfile.mkdtemp(prefix='context-', dir=guard)); (run / 'logs').mkdir()
+        log = run / 'logs/latest.log'; log.write_text('')
+        metadata = dict(self.metadata, _run_directory='forged')
+        source = run / 'native-diagnostic-inputs.json'; source.write_text(json.dumps(metadata))
+        (run / 'native-diagnostic-nonce').write_text(metadata['nonce'])
+        with patch.object(d, 'validate_inputs'), patch.object(d, 'inspect', return_value=([], {})) as inspect:
+            self.assertEqual(0, d.main(log))
+            self.assertEqual(str(run.resolve()), inspect.call_args.args[1]['_run_directory'])
+        self.assertEqual('forged', json.loads(source.read_text())['_run_directory'])
+
     def marker(self, phase):
         return record(f"SPIRIT_NATIVE_STARTUP_BOUNDARY nonce={self.metadata['nonce']} phase={phase}",
                       d.STARTUP_LOGGER, 'INFO', 'Server thread')

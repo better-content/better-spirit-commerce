@@ -5,6 +5,20 @@
 This repository owns its mod-specific behavior and authoring inputs. Read [local instructions](AGENTS.md)
 and the [shared documentation/policy index](../../better-content-modpack/docs/README.md).
 
+## Bounded playtest diagnostics
+
+Loader SLF4J `bc.playtest.better_spirit_commerce.*` reports INFO startup/providers/own source
+(UNKNOWN if unavailable). DEBUG observes scheduled-visit initialization, actual failed attempts
+with retry retained after rollback, successful trader/camp/schedule update, and resident barter
+final rejection versus commit. Trader UUID/theme/native tick/expiry are existing causal visit
+identity; no player identity, names, freeform quote text, offers/NBT or supply inventories are
+copied. Unchanged not-due ticks and quote/render loops remain silent; logging adds no RNG,
+entity construction, world queries, schedule mutations or persistent economy ledger. One shared
+120/minute burst20 budget, 256 aggregate keys, 2048-character record limit and 30-second
+summaries bound output. Disconnect/server stop clears keys without allowance refill. Standalone
+stays INFO; the pack selects scoped DEBUG. State-update/callback completion is not disk-flush,
+pickup or client presentation proof.
+
 
 Forge 1.20.1 mod providing player-effort spirit currency, themed wandering merchants, and a separate resident-village barter system.
 
@@ -124,8 +138,13 @@ the exact native defects, authored input hashes and copied bytes. The same profi
 the existing authored `malum:create/crushing/crush_rare_earths` recipe fix (seven outputs, rather
 than the upstream eight exceeding Create's limit). The GameTest run alone adds this source set;
 staging rejects accidental inclusion of profile data/classes in the production Commerce JAR.
-Native preparation also exposes the generated dev refmap, creates local server properties, and
-materializes fresh registered SERVER config defaults through the actual native config specs.
+Native preparation also exposes the generated dev refmap, creates absent-only local server
+properties, and materializes fresh registered SERVER config defaults through the actual native
+config specs. Each configuration binds one fresh `build/gametest/<UUID>` directory directly to
+Forge's RunConfig, preparation, structures and audited sink. Prior worlds/configs/logs are not
+deleted or reset; existing property bytes are preserved exactly. `verifyNativeRunFixture` checks
+actual RunConfig/path agreement and absent-create/exact-preserve controls. Build outputs still
+require retention before any `clean` invocation.
 These fixture inputs neither modify the pack nor add production dependencies, recipes or advancements.
 
 `headlessGameTest` also runs `scripts/check_native_diagnostics.py` against the current invocation's
@@ -140,7 +159,7 @@ first-tick-end to second-tick-start window, or the second-tick-end to third-tick
 with complete nonce-bound first-three-tick clock/counter/schedule samples. The delayed proof
 subtracts only the measured post-first-tick setup interval and requires conservative remaining
 debt below vanilla's 2,000 ms overload threshold. Raw warnings, proof eligibility, setup/residual
-measurements and schedule evidence remain in `run-gametest/native-diagnostics.json`. Missing or
+measurements and schedule evidence remain in the actual UUID fixture's `native-diagnostics.json`. Missing or
 inconsistent proof, repeated notices and later WARNs do not alone fail correctness. This does
 not invent a standalone performance budget, claim repaired performance or identify the setup
 hotspot. Existing assertions and explicit workload/deadline gates remain unchanged. Timing

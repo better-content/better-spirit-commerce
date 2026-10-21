@@ -169,7 +169,8 @@ def classify(thread, logger, message, metadata, config_context):
         if re.fullmatch(r"Assets URL 'union:" + re.escape(str(MAPPED)) + r"%23[1-9][0-9]*!/(assets|data)/\.mcassetsroot' uses unexpected schema", message):
             return 'native-union-assets', config_context
     if thread == 'main' and logger == 'net.minecraftforge.fml.loading.FMLConfig/CORE':
-        if message == f'Configuration file {ROOT}/run-gametest/config/fml.toml is not correct. Correcting':
+        run_directory = Path(metadata.get('_run_directory', ROOT / 'run-gametest'))
+        if message == f'Configuration file {run_directory}/config/fml.toml is not correct. Correcting':
             return 'native-loader-first-defaults', config_context
     if logger == 'net.minecraftforge.common.ForgeConfigSpec/CORE' and (thread in ('main', 'Server thread') or re.fullmatch(r'modloading-worker-[0-9]+', thread)):
         corrections = metadata['corrections']
@@ -471,6 +472,8 @@ def main(log):
     try:
         validate_inputs()
         metadata = json.loads((run / 'native-diagnostic-inputs.json').read_text())
+        # Derive trusted classification context from the actual audited log, not metadata input.
+        metadata['_run_directory'] = str(run.resolve())
         if metadata['nonce'] != (run / 'native-diagnostic-nonce').read_text().strip():
             raise ValueError('Native diagnostic metadata is not from this invocation')
         failures, counts = inspect(log.read_text().splitlines(keepends=True), metadata, diagnostics)

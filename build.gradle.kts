@@ -1,4 +1,6 @@
 import java.util.UUID
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 
 plugins {
     idea
@@ -17,6 +19,19 @@ base {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+}
+
+// One configuration-time directory binds the RunConfig, setup and exact native audit sink.
+val nativeGameTestDirectory = layout.buildDirectory.dir("gametest/${UUID.randomUUID()}")
+fun provisionNativeProperties(directory: java.io.File) {
+    Files.createDirectories(directory.toPath())
+    try {
+        Files.writeString(directory.toPath().resolve("server.properties"),
+            "online-mode=false\nenforce-secure-profile=false\n",
+            StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+    } catch (alreadyPresent: java.nio.file.FileAlreadyExistsException) {
+        // Retain exact existing effective properties; never normalize or overwrite a fixture.
+    }
 }
 
 // Resources-only native profile: materialize the pack's existing authored Malum fixes,
@@ -73,7 +88,7 @@ minecraft {
         val baseClient = create("client")
         val baseServer = create("server") { arg("--nogui") }
         create("gameTestServer") {
-            workingDirectory(project.file("run-gametest"))
+            workingDirectory(nativeGameTestDirectory.get().asFile)
             property("forge.enableGameTest", "true")
             property("forge.gameTestServer", "true")
             property("forge.enabledGameTestNamespaces", property("mod_id") as String)
@@ -303,7 +318,7 @@ tasks.register("headlessGameTest") {
     description = "Runs Forge game tests in a headless dedicated server."
     dependsOn(tasks.named("runGameTestServer"))
     doLast {
-        val log = file("run-gametest/logs/latest.log")
+        val log = nativeGameTestDirectory.get().file("logs/latest.log").asFile
         check(log.isFile && Regex("All [0-9]+ required tests passed").containsMatchIn(log.readText())) {
             "Forge GameTests did not pass; inspect ${log.absolutePath}"
         }
@@ -322,6 +337,7 @@ tasks.register("verifyFull") {
     description = "Runs the full verification lane including headless Forge game tests."
     dependsOn(tasks.named("verifyFast"))
     dependsOn(tasks.named("headlessGameTest"))
+    dependsOn("verifyNativeRunFixture")
 }
 
 tasks.register("verifyVisualHarness") {
@@ -356,18 +372,30 @@ tasks.register("verifyMarketVisualHarness") {
     }
 }
 
-val resetGameTestMods = tasks.register<Delete>("resetGameTestMods") {
-    delete(layout.projectDirectory.dir("run-gametest/mods"))
-    delete(layout.projectDirectory.dir("run-gametest/world"))
-    delete(layout.projectDirectory.dir("run-gametest/defaultconfigs"))
-    delete(layout.projectDirectory.dir("run-gametest/config"))
-    delete(layout.projectDirectory.file("run-gametest/native-diagnostic-inputs.json"))
-    delete(layout.projectDirectory.file("run-gametest/native-diagnostic-nonce"))
+val resetGameTestMods = tasks.register("resetGameTestMods") {
+    description = "Prepares an isolated UUID GameTest directory without deleting prior fixtures."
+    doLast { nativeGameTestDirectory.get().asFile.mkdirs() }
+}
+
+tasks.register("verifyNativeRunFixture") {
+    group = "verification"
+    doLast {
+        check(file(minecraft.runs.getByName("gameTestServer").workingDirectory).canonicalFile ==
+            nativeGameTestDirectory.get().asFile.canonicalFile) { "Native RunConfig/setup directory mismatch" }
+        val fixture = layout.buildDirectory.dir("native-run-guard/${UUID.randomUUID()}").get().asFile
+        provisionNativeProperties(fixture)
+        val properties = fixture.resolve("server.properties")
+        check(properties.readText() == "online-mode=false\nenforce-secure-profile=false\n")
+        val custom = "# retained exact bytes\r\nonline-mode=true\r\n".toByteArray()
+        properties.writeBytes(custom)
+        provisionNativeProperties(fixture)
+        check(properties.readBytes().contentEquals(custom)) { "Existing native properties overwritten" }
+    }
 }
 
 val syncGameTestStructures = tasks.register<Sync>("syncGameTestStructures") {
     from(layout.projectDirectory.dir("src/main/resources/gameteststructures"))
-    into(layout.projectDirectory.dir("run-gametest/gameteststructures"))
+    into(nativeGameTestDirectory.map { it.dir("gameteststructures") })
 }
 
 val prepareNativeRuntime by tasks.registering {
@@ -377,10 +405,8 @@ val prepareNativeRuntime by tasks.registering {
         check(layout.buildDirectory.file("resources/nativeFixture/better_spirit_commerce.refmap.json").get().asFile.isFile) {
             "Native dev classpath is missing its generated mixin refmap"
         }
-        val properties = file("run-gametest/server.properties")
-        properties.parentFile.mkdirs()
-        properties.writeText("online-mode=false\nenforce-secure-profile=false\n")
-        file("run-gametest/native-diagnostic-nonce").writeText(UUID.randomUUID().toString())
+        provisionNativeProperties(nativeGameTestDirectory.get().asFile)
+        nativeGameTestDirectory.get().file("native-diagnostic-nonce").asFile.writeText(UUID.randomUUID().toString())
     }
 }
 

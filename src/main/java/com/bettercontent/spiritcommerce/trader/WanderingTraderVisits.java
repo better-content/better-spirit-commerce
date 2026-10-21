@@ -1,6 +1,8 @@
 package com.bettercontent.spiritcommerce.trader;
 
 import com.bettercontent.spiritcommerce.config.EconomyConfig;
+import com.bettercontent.spiritcommerce.diagnostics.PlaytestDiagnostics;
+import com.bettercontent.spiritcommerce.diagnostics.PlaytestLog;
 import com.bettercontent.spiritcommerce.api.event.SpiritAcquiredEvent;
 import com.bettercontent.spiritcommerce.spirit.CurrencyIdentity;
 import java.util.Comparator;
@@ -85,7 +87,13 @@ public final class WanderingTraderVisits {
         TraderCampService.expireOrdinaryVisits(level);
         if (level.players().stream().noneMatch(player -> eligibleAnchor(level, player))) return 0;
         final WanderingTraderScheduleData schedule = WanderingTraderScheduleData.get(level);
-        if (!schedule.initialized()) schedule.initializeIfNeeded(gameTime, nextInterval(level.random));
+        if (!schedule.initialized()) {
+            int interval = nextInterval(level.random);
+            schedule.initializeIfNeeded(gameTime, interval);
+            if (PlaytestDiagnostics.LOG.enabled("visits")) PlaytestDiagnostics.LOG.event(
+                    "visits", "trader.schedule", "server", "initialized", "first_eligible_tick",
+                    () -> PlaytestLog.fields("tick", gameTime, "interval_ticks", interval));
+        }
         if (!schedule.isVisitDue(gameTime)) return 0;
         // A failed site keeps this arrival pending; never roll another multi-day interval.
         schedule.scheduleRetry(gameTime, PLACEMENT_RETRY_TICKS);
@@ -94,6 +102,7 @@ public final class WanderingTraderVisits {
         level.getAllEntities().forEach(entity -> before.add(entity.getUUID()));
         if (!spawnAttempt.spawn(level)) {
             rollbackSpawn(level, levelData, previousId, before);
+            visitOutcome(VisitOutcome.SPAWN_REJECTED, gameTime);
             return 0;
         }
 
@@ -101,6 +110,7 @@ public final class WanderingTraderVisits {
         final Entity spawnedEntity = traderId == null ? null : level.getEntity(traderId);
         if (!(spawnedEntity instanceof WanderingTrader trader) || before.contains(traderId)) {
             rollbackSpawn(level, levelData, previousId, before);
+            visitOutcome(VisitOutcome.TRADER_MISSING, gameTime);
             return 0;
         }
 
@@ -110,6 +120,7 @@ public final class WanderingTraderVisits {
                         .thenComparing(ServerPlayer::getUUID)).orElse(null);
         if (anchor == null) {
             rollbackSpawn(level, levelData, previousId, before);
+            visitOutcome(VisitOutcome.ANCHOR_MISSING, gameTime);
             return 0;
         }
         final WanderingTraderTheme theme = SpiritCollectionHistory.get(level).selectTheme(
@@ -119,14 +130,24 @@ public final class WanderingTraderVisits {
         applyTheme(trader, theme, true);
         if (!TraderCampService.createForVisit(trader, theme)) {
             rollbackSpawn(level, levelData, previousId, before);
+            visitOutcome(VisitOutcome.CAMP_REJECTED, gameTime);
             return 0;
         }
         TraderCampData.forTrader(trader).begin(anchor.getUUID(), anchor.blockPosition(), gameTime + VISIT_TICKS);
         schedule.completeVisit(gameTime, nextInterval(level.random), trader.getUUID());
+        if (PlaytestDiagnostics.LOG.enabled("visits")) PlaytestDiagnostics.LOG.event(
+                "visits", "trader.visit", "server", VisitOutcome.COMMITTED.result(), VisitOutcome.COMMITTED.reason(),
+                () -> PlaytestLog.fields("trader", trader.getUUID(), "theme", theme.id(), "tick", gameTime, "expiry_tick", gameTime + VISIT_TICKS));
         if (EconomyConfig.wanderingTraderAnnounceArrival()) {
             announceArrival(level, trader, theme);
         }
         return 1;
+    }
+
+    private static void visitOutcome(VisitOutcome outcome, long tick) {
+        if (PlaytestDiagnostics.LOG.enabled("visits")) PlaytestDiagnostics.LOG.event(
+                "visits", "trader.visit", "server", outcome.result(), outcome.reason(),
+                () -> PlaytestLog.fields("tick", tick, "retry_ticks", PLACEMENT_RETRY_TICKS));
     }
 
     public static ServerPlayer randomEligiblePlayer(final ServerLevel level) {

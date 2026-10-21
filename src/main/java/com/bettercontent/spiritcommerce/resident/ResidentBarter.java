@@ -1,5 +1,7 @@
 package com.bettercontent.spiritcommerce.resident;
 
+import com.bettercontent.spiritcommerce.diagnostics.PlaytestDiagnostics;
+import com.bettercontent.spiritcommerce.diagnostics.PlaytestLog;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -90,16 +92,31 @@ public final class ResidentBarter {
     public static boolean execute(ServerLevel level, LivingEntity resident, ItemStack wanted, ItemStack payment,
                                   BooleanSupplier takePayment, Consumer<ItemStack> giveResult) {
         Quote quote = quote(level, resident, wanted, payment);
-        if (!quote.available()) return false;
+        if (!quote.available()) {
+            barterOutcome("rejected", "quote_unavailable");
+            return false;
+        }
         ResidentState state = ResidentState.of(resident);
         Plan plan = prepare(context(level, ResidentRules.worksite(resident)), state, wanted);
-        if (plan == null || !add(plan.after(), payment) || !takePayment.getAsBoolean()) return false;
+        if (plan == null || !add(plan.after(), payment) || !takePayment.getAsBoolean()) {
+            barterOutcome("rejected", "preflight_or_payment_changed");
+            return false;
+        }
         state.replaceItems(plan.after());
         giveResult.accept(quote.result().copy());
         state.setDoing(quote.recipe() == null ? "Bartering stock" : "Crafting to barter");
         state.event("bartered " + quote.result().getCount() + " " + quote.result().getHoverName().getString()
                 + (quote.recipe() == null ? "" : " via " + quote.recipe()));
+        if (PlaytestDiagnostics.LOG.enabled("barter")) PlaytestDiagnostics.LOG.event(
+                "barter", "resident.barter", "server", "committed", "resident_updated_result_callback_returned",
+                () -> PlaytestLog.fields("result_count", quote.result().getCount(), "payment_count", quote.payment().getCount(),
+                        "recipe", quote.recipe() == null ? "stock" : quote.recipe()));
         return true;
+    }
+
+    private static void barterOutcome(String result, String reason) {
+        if (PlaytestDiagnostics.LOG.enabled("barter")) PlaytestDiagnostics.LOG.event(
+                "barter", "resident.barter", "server", result, reason, null);
     }
 
     private static Plan prepare(Context context, ResidentState state, ItemStack wanted) {

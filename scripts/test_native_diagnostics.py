@@ -267,7 +267,7 @@ class CompatDescriptorContractTest(unittest.TestCase):
                         for index, (mixin, payload) in enumerate(self.payloads.items())}
         self.config = {'required': False, 'minVersion': '0.8',
                        'package': 'com.bettercontent.bettercompatfixes.mixin',
-                       'plugin': 'com.bettercontent.bettercompatfixes.mixin.BetterContentMixinPlugin',
+                       'plugin': 'com.bettercontent.bettercompatfixes.compat.plugin.BetterContentMixinPlugin',
                        'compatibilityLevel': 'JAVA_17', 'injectors': {'defaultRequire': 0},
                        'mixins': ['fixture.Common'], 'client': ['fixture.Client'], 'server': []}
 
@@ -290,12 +290,22 @@ class CompatDescriptorContractTest(unittest.TestCase):
 
     def test_required_package_plugin_mapping_and_loader_policy_drift_fail(self):
         for key, value in [('required', True), ('required', 0), ('package', 'other.mixin'),
-                           ('plugin', 'other.Plugin'), ('compatibilityLevel', 'JAVA_21'),
+                           ('plugin', 'other.Plugin'), ('plugin', None),
+                           ('plugin', 'com.bettercontent.bettercompatfixes.mixin.BetterContentMixinPlugin'),
+                           ('plugin', 'com.bettercontent.bettercompatfixes.compat.plugin.TreasureUrnMixinPlugin'),
+                           ('plugin', 'com.bettercontent.bettercompatfixes.compat.plugin.Oc2rMixinPlugin'),
+                           ('compatibilityLevel', 'JAVA_21'),
                            ('minVersion', '0.9'), ('refmap', 'other.refmap.json'),
                            ('injectors', {'defaultRequire': 1}), ('injectors', {'defaultRequire': False})]:
             changed = dict(self.config, **{key: value})
             with self.subTest(key=key, value=value), self.assertRaisesRegex(ValueError, 'better_compat_fixes.mixins.json'):
                 self.validate(changed)
+
+    def test_missing_plugin_identity_fails(self):
+        changed = dict(self.config)
+        del changed['plugin']
+        with self.assertRaisesRegex(ValueError, 'better_compat_fixes.mixins.json.*plugin'):
+            self.validate(changed)
 
     def test_relevant_missing_duplicate_or_wrong_side_mapping_fails(self):
         for config in [dict(self.config, mixins=[]), dict(self.config, client=[]),

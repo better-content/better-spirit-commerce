@@ -80,7 +80,8 @@ def validate_compat_inputs(jar, targets=None, client_targets=()):
         raise ValueError(f'{context}: descriptor must be an object')
     expected_fields = {'required': False, 'minVersion': '0.8',
                        'package': 'com.bettercontent.bettercompatfixes.mixin',
-                       'plugin': 'com.bettercontent.bettercompatfixes.mixin.BetterContentMixinPlugin',
+                       # Producer plugin is outside the reserved Mixin namespace.
+                       'plugin': 'com.bettercontent.bettercompatfixes.compat.plugin.BetterContentMixinPlugin',
                        'compatibilityLevel': 'JAVA_17'}
     for key, expected in expected_fields.items():
         if config.get(key) != expected or (key == 'required' and config[key] is not False):

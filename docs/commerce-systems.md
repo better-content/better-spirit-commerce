@@ -1,6 +1,6 @@
 # Spirit traders and village economies are separate systems
 
-## Scope and authority
+## Scope
 
 This document owns the gameplay boundary between the two systems implemented in Better Spirit
 Commerce. Sharing a mod, artwork or interface helpers does not make them one economy.

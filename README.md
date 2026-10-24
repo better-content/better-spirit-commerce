@@ -1,10 +1,5 @@
 # Better Spirit Commerce
 
-## Scope and authority
-
-This repository owns its mod-specific behavior and authoring inputs. Read [local instructions](AGENTS.md)
-and the [shared documentation/policy index](../../better-content-modpack/docs/README.md).
-
 ## Bounded playtest diagnostics
 
 Loader SLF4J `bc.playtest.better_spirit_commerce.*` reports INFO startup/providers/own source
@@ -37,7 +32,6 @@ catalogues. Read [System boundaries](docs/commerce-systems.md) before catalogue 
 - Create Deco coins and coin stacks, emerald-priced merchant offers, the old purse/wallet, and superseded Malum harvesting equipment are removed, inert, or hidden. At recipe reload, `CoinRecipeFilter` removes retired recipe IDs and the `better_spirit_commerce:spirit_refinement/` family, rewrites exact ordinary Malum spirit IDs to the regional currency identities, and filters retired-item outputs; it is not a blanket non-kill spirit-output rejection.
 - Malum's native Spirit Pouch is the specialist storage surface. Its pack recipe costs exactly three leather and two string.
 
-Run `./gradlew verifyFull stageRuntimeJar` before committing or pushing.
 
 ## Ordinary trader arrival
 
@@ -195,7 +189,7 @@ bettervillagers execute <uuid> <result_item_id> <result_count> <payment_item_id>
 
 The non-shipping `visualServer` / `visualClient` configurations run a dedicated server and a real Forge client through the production block entity renderer. Prepare and freeze their JVM launch inputs under the shared Forge cache lock, then launch the prepared Java processes directly (under Xvfb when headless). Do not keep a Gradle server invocation holding the cache lock while trying to start a second Gradle client invocation. Every Gradle preparation/verification invocation holds the full-lifetime POSIX `fcntl.lockf` lock at `/home/dev/better-content-modpack/.worklane/forge-cache.lock`; `flock` is not interchangeable.
 
-On first use, accept the Minecraft EULA in generated `run-visual-server/eula.txt`, and set `online-mode=false` and `enforce-secure-profile=false` in generated `server.properties` for the local offline `Dev` client. Register runtime/build/capture outputs before producing them and retain them across handoffs by default under the [shared retention policy](../../better-content-modpack/docs/policies/generated-data.md). Closing a review releases activity; it does not delete data. In the server console, run:
+On first use, accept the Minecraft EULA in generated `run-visual-server/eula.txt`, and set `online-mode=false` and `enforce-secure-profile=false` in generated `server.properties` for the local offline `Dev` client.  In the server console, run:
 
 ```text
 campvisual prepare <player>

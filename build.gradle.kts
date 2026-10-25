@@ -117,7 +117,6 @@ repositories {
     maven("https://maven.tterrag.com/")
     maven("https://harleyoconnor.com/maven")
     maven("https://repo.spongepowered.org/repository/maven-public/")
-    maven("https://maven.llamalad7.mixinextras.org/releases/")
     maven("https://maven.valkyrienskies.org") { content { includeGroup("org.valkyrienskies.core") } }
     maven("https://www.cursemaven.com") { content { includeGroup("curse.maven") } }
     mavenCentral()
@@ -125,6 +124,13 @@ repositories {
 
 // CI and release builds provide verified runtime JARs explicitly. Ordinary local builds
 // use the canonical sibling artifact produced by Dimension Drink's stageRuntimeJar task.
+val verifyLocalProviderRouting by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Proves private providers never reach remote repositories, including missing artifacts."
+    commandLine("python3", "-B", "scripts/test_local_provider_routing.py")
+}
+tasks.matching { it.name == "verifyFast" }.configureEach { dependsOn(verifyLocalProviderRouting) }
+
 val providerDirectory = providers.environmentVariable("BC_CUSTOM_MOD_JAR_DIR").orNull
 require(providerDirectory == null || providerDirectory.isNotBlank()) {
     "BC_CUSTOM_MOD_JAR_DIR must not be blank"
@@ -163,35 +169,30 @@ require(notificationsJar.isFile) {
 }
 // Resolve sibling reobfuscated mods through ForgeGradle so the GameTest dev
 // runtime remaps them into the same names as its Minecraft classes.
+// BEGIN local provider routing (also exercised against a failing HTTP fixture).
+fun org.gradle.api.artifacts.dsl.RepositoryHandler.localProviderRepository(
+    repositoryName: String, providerGroup: String, providerJar: java.io.File,
+) {
+    // Never send private coordinates to public Maven hosts. Do not use a
+    // group-wide exclusiveContent rule: ForgeGradle must still resolve its
+    // generated *_mapped_* coordinates from its own local deobfuscation repo.
+    withType(org.gradle.api.artifacts.repositories.MavenArtifactRepository::class.java).configureEach {
+        if (url.scheme in listOf("http", "https")) content { excludeGroup(providerGroup) }
+    }
+    ivy {
+        name = repositoryName
+        url = providerJar.parentFile.toURI()
+        patternLayout { artifact("[artifact]-[revision].[ext]") }
+        metadataSources { artifact() }
+        content { includeGroup(providerGroup) }
+    }
+}
+// END local provider routing
 repositories {
-    ivy {
-        name = "celestialEventsLocal"
-        url = uri(celestialEventsJar.parentFile)
-        patternLayout { artifact("[artifact]-[revision].[ext]") }
-        metadataSources { artifact() }
-        content { includeGroup("bettercontent.local.celestial") }
-    }
-    ivy {
-        name = "dimensionDrinkLocal"
-        url = uri(dimensionDrinkJar.parentFile)
-        patternLayout { artifact("[artifact]-[revision].[ext]") }
-        metadataSources { artifact() }
-        content { includeGroup("bettercontent.local.dimensiondrink") }
-    }
-    ivy {
-        name = "betterContentFixesLocal"
-        url = uri(betterContentFixesJar.parentFile)
-        patternLayout { artifact("[artifact]-[revision].[ext]") }
-        metadataSources { artifact() }
-        content { includeGroup("bettercontent.local.fixes") }
-    }
-    ivy {
-        name = "betterContentNotificationsLocal"
-        url = uri(notificationsJar.parentFile)
-        patternLayout { artifact("[artifact]-[revision].[ext]") }
-        metadataSources { artifact() }
-        content { includeGroup("bettercontent.local.notifications") }
-    }
+    localProviderRepository("celestialEventsLocal", "bettercontent.local.celestial", celestialEventsJar)
+    localProviderRepository("dimensionDrinkLocal", "bettercontent.local.dimensiondrink", dimensionDrinkJar)
+    localProviderRepository("betterContentFixesLocal", "bettercontent.local.fixes", betterContentFixesJar)
+    localProviderRepository("betterContentNotificationsLocal", "bettercontent.local.notifications", notificationsJar)
 }
 
 dependencies {

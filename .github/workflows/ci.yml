@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches-ignore:
+      - experimental/world-condenser
   pull_request:
   workflow_dispatch:
 

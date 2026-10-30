@@ -253,11 +253,11 @@ public final class SettlementGeneration {
         if (rat instanceof net.minecraft.world.entity.TamableAnimal tame) tame.setTame(true);
         level.addFreshEntity(rat);
         ResidentState state = ResidentState.of(rat);
-        state.add(new ItemStack(Items.CARROT, 8));
-        state.add(new ItemStack(Items.GLASS_BOTTLE, 8));
-        state.add(ResidentRules.waterBottle(3).copyWithCount(4));
-        state.add(new ItemStack(Items.COAL, 6));
-        state.add(new ItemStack(Items.OAK_LOG, 4));
+        ResidentService.addGenerated(state, new ItemStack(Items.CARROT, 8));
+        ResidentService.addGenerated(state, new ItemStack(Items.GLASS_BOTTLE, 8));
+        ResidentService.addGenerated(state, ResidentRules.waterBottle(3).copyWithCount(4));
+        ResidentService.addGenerated(state, new ItemStack(Items.COAL, 6));
+        ResidentService.addGenerated(state, new ItemStack(Items.OAK_LOG, 4));
         state.setDoing("Settling in");
     }
 }

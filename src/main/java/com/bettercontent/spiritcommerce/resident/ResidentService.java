@@ -1,5 +1,7 @@
 package com.bettercontent.spiritcommerce.resident;
 
+import com.bettercontent.spiritcommerce.api.RenewableAcquisitionPolicy;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -36,10 +38,10 @@ public final class ResidentService {
         if (entity instanceof Villager && !entity.getPersistentData().getBoolean("better_spirit_commerce:seeded")) {
             entity.getPersistentData().putBoolean("better_spirit_commerce:seeded", true);
             ResidentState state = ResidentState.of(entity);
-            state.add(new ItemStack(Items.CARROT, 3));
-            state.add(new ItemStack(Items.GLASS_BOTTLE, 3));
-            state.add(ResidentRules.waterBottle(3).copyWithCount(2));
-            state.add(new ItemStack(Items.COAL, 2));
+            addGenerated(state, new ItemStack(Items.CARROT, 3));
+            addGenerated(state, new ItemStack(Items.GLASS_BOTTLE, 3));
+            addGenerated(state, ResidentRules.waterBottle(3).copyWithCount(2));
+            addGenerated(state, new ItemStack(Items.COAL, 2));
         }
         if (entity.getPersistentData().getBoolean("better_spirit_commerce:resident_rat")
                 && net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType())
@@ -50,8 +52,8 @@ public final class ResidentService {
                 && !entity.getPersistentData().getBoolean("better_spirit_commerce:tools_seeded")) {
             entity.getPersistentData().putBoolean("better_spirit_commerce:tools_seeded", true);
             ResidentState state = ResidentState.of(entity);
-            state.add(new ItemStack(Items.STONE_AXE));
-            state.add(new ItemStack(Items.STONE_PICKAXE));
+            addGenerated(state, new ItemStack(Items.STONE_AXE));
+            addGenerated(state, new ItemStack(Items.STONE_PICKAXE));
         }
     }
 
@@ -92,8 +94,10 @@ public final class ResidentService {
         }
         if (state.water() < 14) for (ItemStack stack : state.items()) {
             if (!ResidentRules.isSafeWater(stack)) continue;
+            ItemStack empty = new ItemStack(Items.GLASS_BOTTLE);
+            if (!RenewableAcquisitionPolicy.allows(empty)) continue;
             if (state.remove(stack.copyWithCount(1))) {
-                state.add(new ItemStack(Items.GLASS_BOTTLE));
+                state.add(empty);
                 state.setNeeds(state.food(), state.water() + 6, state.rest());
             }
             break;
@@ -116,9 +120,10 @@ public final class ResidentService {
         for (var recipe : level.getRecipeManager().getAllRecipesFor(RecipeType.SMELTING)) {
             ItemStack result = recipe.getResultItem(level.registryAccess());
             if (!ResidentRules.isSafeWater(result) || !state.canAdd(result)
-                    || recipe.getIngredients().isEmpty()) continue;
+                    || recipe.getIngredients().isEmpty() || !RenewableAcquisitionPolicy.allows(result)) continue;
             for (ItemStack input : state.items()) {
                 if (input.isEmpty() || !recipe.getIngredients().get(0).test(input)) continue;
+                if (!RenewableAcquisitionPolicy.allows(result)) return;
                 if (!state.remove(input.copyWithCount(1)) || !state.remove(fuel)) return;
                 state.add(result.copy());
                 state.setDoing("Purifying water");
@@ -175,7 +180,6 @@ public final class ResidentService {
         } else if (quarry(block) && materialDemand(state, block)
                 && exposed(level, target) && !nearWorkplace(level, target)
                 && !terrain.protectedAt(target)) {
-            if (!equipFor(mob, state, block)) return;
             harvestBlock(level, mob, state, target, block, "Quarrying surface material");
         }
     }
@@ -191,8 +195,10 @@ public final class ResidentService {
                 state.setDoing("Going to collect water");
                 return true;
             }
+            ItemStack filled = ResidentRules.waterBottle(0);
+            if (!RenewableAcquisitionPolicy.allows(filled)) return false;
             if (!state.remove(new ItemStack(Items.GLASS_BOTTLE))) return false;
-            state.add(ResidentRules.waterBottle(0));
+            state.add(filled);
             state.setDoing("Collecting water");
             mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
             return true;
@@ -204,6 +210,7 @@ public final class ResidentService {
                                     BlockPos pos, BlockState block) {
         List<ItemStack> drops = net.minecraft.world.level.block.Block.getDrops(block, level, pos,
                 level.getBlockEntity(pos), mob, mob.getMainHandItem());
+        if (!RenewableAcquisitionPolicy.allowsAll(drops)) return;
         ItemStack seed = drops.stream().filter(s -> s.is(block.getBlock().asItem())).findFirst().orElse(ItemStack.EMPTY);
         if (seed.isEmpty()) return;
         seed.shrink(1);
@@ -220,7 +227,8 @@ public final class ResidentService {
     private static void harvestBlock(ServerLevel level, PathfinderMob mob, ResidentState state,
                                      BlockPos pos, BlockState block, String action) {
         List<ItemStack> drops = net.minecraft.world.level.block.Block.getDrops(block, level, pos,
-                level.getBlockEntity(pos), mob, mob.getMainHandItem());
+                level.getBlockEntity(pos), mob, gatheringTool(mob, state, block));
+        if (!RenewableAcquisitionPolicy.allowsAll(drops) || !equipFor(mob, state, block)) return;
         level.destroyBlock(pos, false, mob);
         for (ItemStack drop : drops) if (!state.add(drop))
             net.minecraft.world.level.block.Block.popResource(level, pos, drop);
@@ -233,7 +241,6 @@ public final class ResidentService {
 
     private static void harvestTree(ServerLevel level, PathfinderMob mob, ResidentState state,
                                     BlockPos base, BlockState block) {
-        equipFor(mob, state, block);
         while (level.getBlockState(base.below()).getBlock() == block.getBlock()
                 && base.getY() > level.getMinBuildHeight() + 1) base = base.below();
         ResidentTerrainData terrain = ResidentTerrainData.get(level);
@@ -250,12 +257,21 @@ public final class ResidentService {
             if (level.getBlockState(p).getBlock() == block.getBlock()
                     && !terrain.protectedAt(p)) logs.add(p.immutable());
         if (logs.size() > 48) return;
+        List<List<ItemStack>> stagedDrops = new ArrayList<>();
         for (BlockPos pos : logs) {
             BlockState log = level.getBlockState(pos);
             List<ItemStack> drops = net.minecraft.world.level.block.Block.getDrops(log, level, pos,
-                    level.getBlockEntity(pos), mob, mob.getMainHandItem());
+                    level.getBlockEntity(pos), mob, gatheringTool(mob, state, log));
+            if (!RenewableAcquisitionPolicy.allowsAll(drops)) return;
+            stagedDrops.add(drops);
+        }
+        // Validate the complete tree before equipping/debiting tools or destroying the first log.
+        if (!RenewableAcquisitionPolicy.allowsAll(stagedDrops.stream().flatMap(List::stream).toList())
+                || !equipFor(mob, state, block)) return;
+        for (int index = 0; index < logs.size(); index++) {
+            BlockPos pos = logs.get(index);
             level.destroyBlock(pos, false, mob);
-            for (ItemStack drop : drops) if (!state.add(drop))
+            for (ItemStack drop : stagedDrops.get(index)) if (!state.add(drop))
                 net.minecraft.world.level.block.Block.popResource(level, pos, drop);
         }
         if (level.getBlockState(base.below()).is(BlockTags.DIRT)
@@ -264,6 +280,18 @@ public final class ResidentService {
         state.event("felled tree at " + base.toShortString());
         mob.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
         wearTool(mob, block, Math.max(1, logs.size() / 4));
+    }
+
+    /** New seed/source generation only. Never use for player gifts or transfers of old finite stock. */
+    static boolean addGenerated(ResidentState state, ItemStack generated) {
+        return RenewableAcquisitionPolicy.allows(generated) && state.add(generated);
+    }
+
+    /** Read-only tool selection so source output veto precedes inventory/equipment debit. */
+    private static ItemStack gatheringTool(PathfinderMob mob, ResidentState state, BlockState block) {
+        if (mob.getMainHandItem().isCorrectToolForDrops(block)) return mob.getMainHandItem();
+        for (ItemStack stack : state.items()) if (stack.isCorrectToolForDrops(block)) return stack.copyWithCount(1);
+        return mob.getMainHandItem();
     }
 
     private static boolean hasToolFor(PathfinderMob mob, ResidentState state, BlockState block) {

@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 plugins {
     idea
     `maven-publish`
@@ -203,6 +205,14 @@ val stageRuntimeJar by tasks.registering(Copy::class) {
     from(layout.buildDirectory.file("reobfJar/output.jar"))
     into(layout.buildDirectory.dir("libs"))
     rename { "${base.archivesName.get()}-$version.jar" }
+    doLast {
+        val staged = layout.buildDirectory.file("libs/${base.archivesName.get()}-$version.jar").get().asFile
+        ZipFile(staged).use { zip ->
+            check(zip.getEntry("better_spirit_commerce.refmap.json") != null) {
+                "staged Spirit Commerce JAR lacks its production mixin refmap: $staged"
+            }
+        }
+    }
 }
 
 tasks.named("assemble") {
@@ -211,6 +221,13 @@ tasks.named("assemble") {
 
 tasks.withType<JavaCompile>().configureEach {
     options.release.set(17)
+}
+
+// Incremental javac can recompile only dependent classes after the Font provider
+// changes and silently omit Mixin's generated refmap from the runtime JAR.
+tasks.named<JavaCompile>("compileJava") {
+    options.isIncremental = false
+    outputs.file(layout.buildDirectory.file("tmp/compileJava/compileJava-refmap.json"))
 }
 
 tasks.named("compileVisualHarnessJava") { dependsOn(tasks.named("classes")) }

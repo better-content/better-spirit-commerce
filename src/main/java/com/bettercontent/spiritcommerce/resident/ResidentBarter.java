@@ -1,5 +1,7 @@
 package com.bettercontent.spiritcommerce.resident;
 
+import com.bettercontent.spiritcommerce.api.RenewableAcquisitionPolicy;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -27,7 +29,8 @@ public final class ResidentBarter {
         public boolean available() { return blocker == null; }
     }
     public record PaymentPlan(List<ItemStack> after, ResourceLocation recipe, int cost) {}
-    private record Plan(List<ItemStack> after, ResourceLocation recipe, List<ItemStack> inputs, int cost) {}
+    private record Plan(List<ItemStack> after, ResourceLocation recipe, List<ItemStack> inputs,
+                        List<ItemStack> generated, int cost) {}
     private record Context(ServerLevel level, Set<String> stations, Map<Item, List<Recipe<?>>> byOutput,
                            List<Recipe<?>> recipes) {}
 
@@ -93,26 +96,30 @@ public final class ResidentBarter {
         if (!quote.available()) return false;
         ResidentState state = ResidentState.of(resident);
         Plan plan = prepare(context(level, ResidentRules.worksite(resident)), state, wanted);
-        if (plan == null || !add(plan.after(), payment) || !takePayment.getAsBoolean()) return false;
-        state.replaceItems(plan.after());
-        giveResult.accept(quote.result().copy());
-        state.setDoing(quote.recipe() == null ? "Bartering stock" : "Crafting to barter");
-        state.event("bartered " + quote.result().getCount() + " " + quote.result().getHoverName().getString()
-                + (quote.recipe() == null ? "" : " via " + quote.recipe()));
-        return true;
+        if (plan == null || !add(plan.after(), payment)) return false;
+        return RenewableAcquisitionPolicy.commitIfAllowed(plan.generated(), () -> {
+            if (!takePayment.getAsBoolean()) return false;
+            state.replaceItems(plan.after());
+            giveResult.accept(quote.result().copy());
+            state.setDoing(quote.recipe() == null ? "Bartering stock" : "Crafting to barter");
+            state.event("bartered " + quote.result().getCount() + " " + quote.result().getHoverName().getString()
+                    + (quote.recipe() == null ? "" : " via " + quote.recipe()));
+            return true;
+        });
     }
 
     private static Plan prepare(Context context, ResidentState state, ItemStack wanted) {
         if (wanted.isEmpty()) return null;
         List<ItemStack> stock = copy(state.items());
         if (surplus(state, wanted) >= wanted.getCount() && remove(stock, wanted))
-            return new Plan(stock, null, List.of(), ResidentRules.basicValue(wanted) * wanted.getCount());
+            return new Plan(stock, null, List.of(), List.of(), ResidentRules.basicValue(wanted) * wanted.getCount());
         for (Recipe<?> recipe : context.byOutput().getOrDefault(wanted.getItem(), List.of())) {
             ItemStack output = recipe.getResultItem(context.level().registryAccess());
             if (!ItemStack.isSameItemSameTags(output, wanted) || output.getCount() != wanted.getCount()) continue;
             Work work = new Work(copy(state.items()));
             if (craft(context, recipe, work, 0, new HashSet<>(), new Budget()) && remove(work.slots, wanted))
-                return new Plan(work.slots, recipe.getId(), work.inputs, Math.max(1, work.cost));
+                return RenewableAcquisitionPolicy.allowsAll(work.generated)
+                        ? new Plan(work.slots, recipe.getId(), work.inputs, List.copyOf(work.generated), Math.max(1, work.cost)) : null;
         }
         return null;
     }
@@ -139,15 +146,17 @@ public final class ResidentBarter {
     private static final class Work {
         List<ItemStack> slots;
         List<ItemStack> inputs = new ArrayList<>();
+        List<ItemStack> generated = new ArrayList<>();
         int cost;
         Work(List<ItemStack> slots) { this.slots = slots; }
         Work copy() {
             Work out = new Work(ResidentBarter.copy(slots));
             out.inputs.addAll(inputs.stream().map(ItemStack::copy).toList());
+            out.generated.addAll(generated.stream().map(ItemStack::copy).toList());
             out.cost = cost;
             return out;
         }
-        void use(Work other) { slots = other.slots; inputs = other.inputs; cost = other.cost; }
+        void use(Work other) { slots = other.slots; inputs = other.inputs; generated = other.generated; cost = other.cost; }
     }
 
     private static final class Budget { int calls; }
@@ -157,7 +166,7 @@ public final class ResidentBarter {
         if (depth > 2 || ++budget.calls > 96) return false;
         ItemStack result = recipe.getResultItem(context.level().registryAccess());
         if (result.isEmpty() || result.getCount() > result.getMaxStackSize()
-                || !visiting.add(key(result))) return false;
+                || !RenewableAcquisitionPolicy.allows(result) || !visiting.add(key(result))) return false;
         Work work = target.copy();
         List<ItemStack> consumed = new ArrayList<>();
         int index = 0;
@@ -215,11 +224,13 @@ public final class ResidentBarter {
             if (input.hasCraftingRemainingItem()) {
                 ItemStack remainder = input.getCraftingRemainingItem();
                 remainder.setCount(remainder.getCount() * input.getCount());
-                if (!add(work.slots, remainder)) { visiting.remove(key(result)); return false; }
+                if (!RenewableAcquisitionPolicy.allows(remainder) || !add(work.slots, remainder)) { visiting.remove(key(result)); return false; }
+                work.generated.add(remainder.copy());
             }
         }
         work.cost++;
         if (!add(work.slots, result)) { visiting.remove(key(result)); return false; }
+        work.generated.add(result.copy());
         target.use(work);
         visiting.remove(key(result));
         return true;
@@ -281,7 +292,8 @@ public final class ResidentBarter {
         for (Recipe<?> recipe : level.getRecipeManager().getRecipes()) {
             if (!supported(recipe) || !hasStation(stations, recipe)) continue;
             ItemStack output = recipe.getResultItem(level.registryAccess());
-            if (output.isEmpty() || recipe.getIngredients().isEmpty()) continue;
+            if (output.isEmpty() || recipe.getIngredients().isEmpty()
+                    || !RenewableAcquisitionPolicy.allows(output)) continue;
             recipes.add(recipe);
             index.computeIfAbsent(output.getItem(), ignored -> new ArrayList<>()).add(recipe);
         }

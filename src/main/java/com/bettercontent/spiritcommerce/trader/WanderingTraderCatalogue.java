@@ -1,5 +1,7 @@
 package com.bettercontent.spiritcommerce.trader;
 
+import com.bettercontent.spiritcommerce.api.RenewableAcquisitionPolicy;
+
 import com.bettercontent.spiritcommerce.config.EconomyPolicy;
 import com.bettercontent.spiritcommerce.spirit.SpiritKind;
 import com.bettercontent.spiritcommerce.registry.CurrencyItems;
@@ -37,6 +39,7 @@ public final class WanderingTraderCatalogue {
         if (theme == null) theme = WanderingTraderTheme.forUuid(trader.getUUID());
         SpiritKind spirit = SpiritKind.fromId(theme.id());
         Item payment = CurrencyItems.item(theme.currencyIdentity()).get();
+        offers.removeIf(offer -> !RenewableAcquisitionPolicy.allowsMerchant(trader,offer.getResult()));
         boolean cataloguePresent = hasAuthoredCatalogue(offers, spirit, payment);
         if (!cataloguePresent) {
             offers.clear();
@@ -46,7 +49,13 @@ public final class WanderingTraderCatalogue {
     }
 
     private static boolean hasAuthoredCatalogue(final MerchantOffers offers, final SpiritKind spirit, final Item payment) {
-        boolean[] rowsFound = new boolean[EconomyPolicy.wanderingRows(spirit).size()];
+        var authoredRows = EconomyPolicy.wanderingRows(spirit);
+        boolean[] rowsFound = new boolean[authoredRows.size()];
+        // Intentionally filtered rows are not missing stock: never rebuild/reset permitted offers.
+        for (int index = 0; index < authoredRows.size(); index++) {
+            var row = authoredRows.get(index); Item output = item(row.result().id());
+            rowsFound[index] = output != null && !RenewableAcquisitionPolicy.allows(new ItemStack(output,row.result().count()));
+        }
         boolean eggFound = false;
         boolean fontFound = false;
         for (MerchantOffer offer : offers) {
@@ -85,7 +94,8 @@ public final class WanderingTraderCatalogue {
     private static void appendBaseOffers(final MerchantOffers offers, final SpiritKind spirit, final Item payment) {
         for (EconomyPolicy.WanderingRow row : EconomyPolicy.wanderingRows(spirit)) {
             Item result = item(row.result().id());
-            if (payment != null && result != null) offers.add(new MerchantOffer(
+            if (payment != null && result != null
+                    && RenewableAcquisitionPolicy.allows(new ItemStack(result,row.result().count()))) offers.add(new MerchantOffer(
                     new ItemStack(payment, row.cost()), new ItemStack(result, row.result().count()),
                     row.maxUses(), row.xp(), 0.0F));
         }

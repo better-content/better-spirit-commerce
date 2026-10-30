@@ -1,5 +1,6 @@
 package com.bettercontent.spiritcommerce.mixin;
 
+import com.bettercontent.spiritcommerce.api.RenewableAcquisitionPolicy;
 import com.bettercontent.spiritcommerce.trader.MerchantCurrencyPolicy;
 import com.bettercontent.spiritcommerce.trader.PlagueDoctorCatalogue;
 import com.bettercontent.spiritcommerce.trader.VillageStarterOffer;
@@ -38,5 +39,8 @@ abstract class AbstractVillagerMixin {
         if (merchant instanceof Villager villager) {
             VillagerCatalogue.ensureFontOfferIfAvailable(villager, offers);
         }
+        // Final server-side NPC filter AFTER custom daily/themed/font/third-party appends.
+        // Resident finite-stock barter does not use MerchantOffers and is deliberately untouched.
+        offers.removeIf(offer -> !RenewableAcquisitionPolicy.allowsMerchant(merchant,offer.getResult()));
     }
 }

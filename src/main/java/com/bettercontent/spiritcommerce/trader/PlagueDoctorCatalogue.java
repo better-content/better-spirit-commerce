@@ -1,5 +1,7 @@
 package com.bettercontent.spiritcommerce.trader;
 
+import com.bettercontent.spiritcommerce.api.RenewableAcquisitionPolicy;
+
 import com.bettercontent.spiritcommerce.config.EconomyPolicy;
 import com.bettercontent.spiritcommerce.spirit.SpiritKind;
 import com.bettercontent.spiritcommerce.spirit.CurrencyIdentity;
@@ -95,6 +97,7 @@ public final class PlagueDoctorCatalogue {
     }
 
     static void ensureOffers(final AbstractVillager doctor, final MerchantOffers offers, final long day) {
+        offers.removeIf(offer -> !RenewableAcquisitionPolicy.allowsMerchant(doctor,offer.getResult()));
         var data = doctor.getPersistentData();
         boolean current = data.getInt(VERSION_TAG) == VERSION && data.getLong(DAY_TAG) == day;
         if (current && !offers.isEmpty()) {
@@ -111,7 +114,8 @@ public final class PlagueDoctorCatalogue {
         for (EconomyPolicy.PlagueDoctorRow row : selected) {
             Item payment = CurrencyItems.item(row.kind().currencyIdentity()).get();
             Item result = item(new ResourceLocation(row.result().id()));
-            if (payment == Items.AIR || result == Items.AIR) continue;
+            if (payment == Items.AIR || result == Items.AIR
+                    || !RenewableAcquisitionPolicy.allows(new ItemStack(result,row.result().count()))) continue;
             offers.add(new MerchantOffer(new ItemStack(payment, row.cost()),
                     new ItemStack(result, row.result().count()), row.maxUses(), row.xp(), 0.0F));
         }
@@ -122,7 +126,9 @@ public final class PlagueDoctorCatalogue {
 
     private static int authoredPrefixCount(final UUID doctorId, final long day, final MerchantOffers offers) {
         List<EconomyPolicy.PlagueDoctorRow> selected = selectRows(doctorId, day,
-                PlagueDoctorCatalogue::isAvailableItem);
+                PlagueDoctorCatalogue::isAvailableItem).stream()
+                .filter(row -> RenewableAcquisitionPolicy.allows(new ItemStack(item(new ResourceLocation(row.result().id())),row.result().count())))
+                .toList();
         int count = 0;
         while (count < selected.size() && count < offers.size()
                 && signature(selected.get(count)).equals(signature(offers.get(count)))) count++;

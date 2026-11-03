@@ -63,10 +63,50 @@ class RenewableAcquisitionSourceTest {
     }
     @Test void listingAndDailyGenerationGuardsDoNotResetPermittedWanderingStock() throws Exception {
         String main=source("mixin/AbstractVillagerMixin.java");
-        assertTrue(main.lastIndexOf("offers.removeIf(")>main.indexOf("ensureFontOfferIfAvailable("));
+        int font=main.indexOf("ensureFontOfferIfAvailable("), finalGuard=main.lastIndexOf("offers.removeIf(");
+        assertTrue(font>=0 && finalGuard>font);
+        int resident=main.indexOf("if (merchant instanceof Villager && ResidentRules.isResident(merchant)) {");
+        int normalize=main.indexOf("MerchantCurrencyPolicy.normalize(offers);");
+        assertTrue(resident>=0 && normalize>resident);
         String wandering=source("trader/WanderingTraderCatalogue.java");
-        assertTrue(wandering.indexOf("offers.removeIf(")<wandering.indexOf("boolean cataloguePresent"));
-        assertTrue(wandering.contains("rowsFound[index] = output != null && !RenewableAcquisitionPolicy.allows"));
+        int selected=wandering.indexOf("List<Row> selected = selectedRows(trader, spirit);");
+        int guard=wandering.indexOf("offers.removeIf(offer -> !RenewableAcquisitionPolicy.allowsMerchant(trader, offer.getResult()))");
+        int check=wandering.indexOf("if (!hasSelectedCatalogue(offers, selected, payment)) {");
+        int rebuildCall=wandering.indexOf("rebuildPreservingUses(offers, selected, payment, spirit);");
+        assertTrue(selected>=0 && guard>selected && check>guard && rebuildCall>check);
+        assertTrue(wandering.contains("if (!hasSelectedCatalogue(offers, selected, payment)) {\n            rebuildPreservingUses(offers, selected, payment, spirit);"));
+
+        int selectionStart=wandering.indexOf("static List<Row> selectedRows(");
+        int outputStart=wandering.indexOf("private static ItemStack outputFor(");
+        int existingStart=wandering.indexOf("private static boolean hasSelectedCatalogue(");
+        int nativeStart=wandering.indexOf("private static boolean validNativeState(");
+        int rebuildStart=wandering.indexOf("private static void rebuildPreservingUses(");
+        int fontStart=wandering.indexOf("static boolean appendFontOfferIfAvailable(");
+        assertTrue(selectionStart>=0 && outputStart>selectionStart && existingStart>outputStart
+                && nativeStart>existingStart && rebuildStart>nativeStart && fontStart>rebuildStart);
+        String selectionBody=wandering.substring(selectionStart,outputStart);
+        int selectedOutput=selectionBody.indexOf("ItemStack output = outputFor(row);");
+        int selectedPolicy=selectionBody.indexOf("RenewableAcquisitionPolicy.allows(output)");
+        assertTrue(selectedOutput>=0 && selectedPolicy>selectedOutput);
+        String outputBody=wandering.substring(outputStart,existingStart);
+        assertTrue(outputBody.contains("putByte(\"Flight\", (byte) 1)"));
+        assertTrue(outputBody.contains("remove(\"Explosions\")"));
+        String existingBody=wandering.substring(existingStart,nativeStart);
+        assertTrue(existingBody.contains("!validNativeState(offer.getResult())"));
+        assertFalse(existingBody.contains("getUses()"));
+        String nativeBody=wandering.substring(nativeStart,rebuildStart);
+        assertTrue(nativeBody.contains("getByte(\"Flight\") == 1"));
+        assertTrue(nativeBody.contains("!stack.getTag().getCompound(\"Fireworks\").contains(\"Explosions\")"));
+        String rebuildBody=wandering.substring(rebuildStart,fontStart);
+        int rebuiltOutput=rebuildBody.indexOf("ItemStack output = outputFor(row);");
+        int rebuiltPolicy=rebuildBody.indexOf("RenewableAcquisitionPolicy.allows(output)");
+        assertTrue(rebuiltOutput>=0 && rebuiltPolicy>rebuiltOutput);
+        int spentMerge=rebuildBody.indexOf("spentUnits.merge(id, (long) Math.max(0, old.getUses()) * old.getResult().getCount(), Long::sum);");
+        int clear=rebuildBody.indexOf("offers.clear();");
+        int spentLookup=rebuildBody.indexOf("spentUnits.getOrDefault(ForgeRegistries.ITEMS.getKey(output.getItem()), 0L)");
+        int cappedUses=rebuildBody.indexOf("Math.min(row.maxUses(), (spent + row.result().count() - 1) / row.result().count())");
+        int newOffer=rebuildBody.indexOf("output, uses, row.maxUses(), row.xp()");
+        assertTrue(spentMerge>=0 && clear>spentMerge && spentLookup>clear && cappedUses>spentLookup && newOffer>cappedUses);
         assertTrue(source("trader/PlagueDoctorCatalogue.java").contains("!RenewableAcquisitionPolicy.allows(new ItemStack(result,row.result().count()))"));
     }
 }

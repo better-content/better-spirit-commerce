@@ -13,42 +13,46 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      BC_CUSTOM_MOD_JAR_DIR: ${{ github.workspace }}/build/ci-provider-jars
+      BC_CI_PACK_REF: ${{ vars.BC_CI_PACK_REF }}
     steps:
+      - name: Require immutable provider baseline
+        shell: bash
+        run: '[[ "$BC_CI_PACK_REF" =~ ^[0-9a-f]{40}$ ]] || { echo "Set BC_CI_PACK_REF to a reviewed full pack commit"; exit 1; }'
       - uses: actions/checkout@v4
-      - name: Check out pinned provider baseline
+        with:
+          path: mod_source/better-spirit-commerce
+      - name: Check out pinned pack inputs
         uses: actions/checkout@v4
         with:
           repository: better-content/better-content-modpack
-          ref: aacd172ab87ee00a47ddf15bc02a3ddb25e9cdd4
-          path: build/ci-pack-baseline
-          sparse-checkout: |
-            .github/scripts
-            gradle/active-custom-mods.json
-            index.toml
-            mods
-          sparse-checkout-cone-mode: false
-      - name: Prepare verified provider JARs
-        run: >-
-          python3 build/ci-pack-baseline/.github/scripts/prepare-provider-jars.py
-          --pack-root build/ci-pack-baseline
-          --repository better-spirit-commerce
-          --output "$BC_CUSTOM_MOD_JAR_DIR"
+          ref: ${{ env.BC_CI_PACK_REF }}
+          path: better-content-modpack
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Prepare verified provider JARs
+        run: >-
+          python3 better-content-modpack/.github/scripts/prepare-native-ci-inputs.py
+          --pack-root better-content-modpack --repository better-spirit-commerce
+          --source-root mod_source/better-spirit-commerce --output native-ci
       - name: Verify repository
-        run: ./gradlew --no-daemon verifyFull stageRuntimeJar
+        working-directory: mod_source/better-spirit-commerce
+        run: ./gradlew --no-daemon --max-workers=2 --no-build-cache verifyFull stageRuntimeJar
       - name: Preserve verification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: repository-verification
           path: |
-            build/reports/
-            build/test-results/
-            build/ci-provider-jars/providers.json
+            mod_source/better-spirit-commerce/build/reports/
+            mod_source/better-spirit-commerce/build/test-results/
+            mod_source/better-spirit-commerce/build/gametest/**/logs/
+            native-ci/receipt.json
+            native-ci/providers/providers.json
           if-no-files-found: ignore
           retention-days: 14

@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.minecraft.resources.ResourceLocation;
 
-/** The one loaded and validated authority for acquisition, commerce rows, and retired surfaces. */
+/** Legacy/acquisition/Doctor authority and facade onto the separately authored active wandering pool. */
 public final class EconomyPolicy {
     public static final String SCHEMA = "bc.economy_policy.v4";
     private static final Document DOCUMENT = load();
@@ -32,7 +32,7 @@ public final class EconomyPolicy {
     public static List<WanderingRow> wanderingRows(final SpiritKind spirit) { return WANDERERS.get(spirit); }
     public static List<PlagueDoctorRow> plagueDoctorRows() { return java.util.stream.Stream.concat(DOCUMENT.plagueDoctorRows().stream(), tempoDoctorRows().stream()).toList(); }
     public static int villagerRowCount() { return 280; }
-    public static int wanderingRowCount() { return 104; }
+    public static int wanderingRowCount() { return WANDERERS.values().stream().mapToInt(List::size).sum(); }
     public static int plagueDoctorRowCount() { return 48; }
 
     private static Document load() {
@@ -131,8 +131,7 @@ public final class EconomyPolicy {
     private static Map<SpiritKind, List<WanderingRow>> groupWanderers() {
         Map<SpiritKind, List<WanderingRow>> rows = new EnumMap<>(SpiritKind.class);
         for (SpiritKind kind : SpiritKind.values()) {
-            rows.put(kind, kind == SpiritKind.TEMPO ? tempoWanderingRows()
-                    : DOCUMENT.wanderingRows().stream().filter(row -> row.kind() == kind).toList());
+            rows.put(kind, WanderingPool.rows(kind).stream().map(WanderingPool.Row::trade).toList());
         }
         return Map.copyOf(rows);
     }

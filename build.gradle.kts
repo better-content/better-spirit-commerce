@@ -1,4 +1,7 @@
 import java.util.zip.ZipFile
+import java.util.UUID
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 
 plugins {
     idea
@@ -17,6 +20,46 @@ base {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+}
+
+// One configuration-time directory binds the RunConfig, setup and exact native audit sink.
+val nativeGameTestDirectory = layout.buildDirectory.dir("gametest/${UUID.randomUUID()}")
+fun provisionNativeProperties(directory: java.io.File) {
+    Files.createDirectories(directory.toPath())
+    try {
+        Files.writeString(directory.toPath().resolve("server.properties"),
+            "online-mode=false\nenforce-secure-profile=false\n",
+            StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+    } catch (alreadyPresent: java.nio.file.FileAlreadyExistsException) {
+        // Retain exact existing effective properties; never normalize or overwrite a fixture.
+    }
+}
+
+// Resources-only native profile: materialize the pack's existing authored Malum fixes,
+// without adding them to Commerce's production source set or staged JAR.
+val nativeFixture by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
+    runtimeClasspath += sourceSets.main.get().output + sourceSets.main.get().runtimeClasspath
+}
+val malumAdvancementFixes = listOf("impetus_creation_zinc", "node_focusing_zinc",
+    "zinc_from_node_smelting", "zinc_from_node_blasting")
+val authoredMalumFixRoot = file("../../better-content-modpack/kubejs/data/malum/advancements/recipes")
+
+tasks.named<ProcessResources>(nativeFixture.processResourcesTaskName) {
+    dependsOn(tasks.named("compileJava"))
+    from(layout.buildDirectory.file("tmp/compileJava/better_spirit_commerce.refmap.json"))
+    from(authoredMalumFixRoot) {
+        include(malumAdvancementFixes.map { "$it.json" })
+        into("data/malum/advancements/recipes")
+    }
+    from(file("../../better-content-modpack/kubejs/data/malum/recipes/create/crushing/crush_rare_earths.json")) {
+        into("data/malum/recipes/create/crushing")
+    }
+    doLast {
+        malumAdvancementFixes.forEach { name ->
+            check(authoredMalumFixRoot.resolve("$name.json").isFile) { "Missing authored pack fix: $name" }
+        }
+    }
 }
 
 val visualHarness by sourceSets.creating {
@@ -46,10 +89,11 @@ minecraft {
         val baseClient = create("client")
         val baseServer = create("server") { arg("--nogui") }
         create("gameTestServer") {
-            workingDirectory(project.file("run-gametest"))
+            workingDirectory(nativeGameTestDirectory.get().asFile)
             property("forge.enableGameTest", "true")
             property("forge.gameTestServer", "true")
             property("forge.enabledGameTestNamespaces", property("mod_id") as String)
+            mods { named(property("mod_id") as String) { source(nativeFixture) } }
             arg("--nogui")
         }
         create("visualServer") {
@@ -74,7 +118,6 @@ repositories {
     maven("https://maven.tterrag.com/")
     maven("https://harleyoconnor.com/maven")
     maven("https://repo.spongepowered.org/repository/maven-public/")
-    maven("https://maven.llamalad7.mixinextras.org/releases/")
     maven("https://maven.valkyrienskies.org") { content { includeGroup("org.valkyrienskies.core") } }
     maven("https://www.cursemaven.com") { content { includeGroup("curse.maven") } }
     mavenCentral()
@@ -82,9 +125,24 @@ repositories {
 
 // CI and release builds provide verified runtime JARs explicitly. Ordinary local builds
 // use the canonical sibling artifact produced by Dimension Drink's stageRuntimeJar task.
+val verifyLocalProviderRouting by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Proves private providers never reach remote repositories, including missing artifacts."
+    commandLine("python3", "-B", "scripts/test_local_provider_routing.py")
+}
+tasks.matching { it.name == "verifyFast" }.configureEach { dependsOn(verifyLocalProviderRouting) }
+
 val providerDirectory = providers.environmentVariable("BC_CUSTOM_MOD_JAR_DIR").orNull
 require(providerDirectory == null || providerDirectory.isNotBlank()) {
     "BC_CUSTOM_MOD_JAR_DIR must not be blank"
+}
+val celestialEventsJar = if (providerDirectory == null) {
+    file("../better-celestial-events/build/libs/better-celestial-events-0.1.0.jar")
+} else {
+    file(providerDirectory).resolve("better-celestial-events-0.1.0.jar")
+}
+require(celestialEventsJar.isFile) {
+    "Missing optional compile provider better-celestial-events-0.1.0.jar at $celestialEventsJar"
 }
 val dimensionDrinkJar = if (providerDirectory == null) {
     file("../better-dimension-fonts/build/libs/better-dimension-fonts-1.0.0.jar")
@@ -112,28 +170,30 @@ require(notificationsJar.isFile) {
 }
 // Resolve sibling reobfuscated mods through ForgeGradle so the GameTest dev
 // runtime remaps them into the same names as its Minecraft classes.
+// BEGIN local provider routing (also exercised against a failing HTTP fixture).
+fun org.gradle.api.artifacts.dsl.RepositoryHandler.localProviderRepository(
+    repositoryName: String, providerGroup: String, providerJar: java.io.File,
+) {
+    // Never send private coordinates to public Maven hosts. Do not use a
+    // group-wide exclusiveContent rule: ForgeGradle must still resolve its
+    // generated *_mapped_* coordinates from its own local deobfuscation repo.
+    withType(org.gradle.api.artifacts.repositories.MavenArtifactRepository::class.java).configureEach {
+        if (url.scheme in listOf("http", "https")) content { excludeGroup(providerGroup) }
+    }
+    ivy {
+        name = repositoryName
+        url = providerJar.parentFile.toURI()
+        patternLayout { artifact("[artifact]-[revision].[ext]") }
+        metadataSources { artifact() }
+        content { includeGroup(providerGroup) }
+    }
+}
+// END local provider routing
 repositories {
-    ivy {
-        name = "dimensionDrinkLocal"
-        url = uri(dimensionDrinkJar.parentFile)
-        patternLayout { artifact("[artifact]-[revision].[ext]") }
-        metadataSources { artifact() }
-        content { includeGroup("bettercontent.local.dimensiondrink") }
-    }
-    ivy {
-        name = "betterContentFixesLocal"
-        url = uri(betterContentFixesJar.parentFile)
-        patternLayout { artifact("[artifact]-[revision].[ext]") }
-        metadataSources { artifact() }
-        content { includeGroup("bettercontent.local.fixes") }
-    }
-    ivy {
-        name = "betterContentNotificationsLocal"
-        url = uri(notificationsJar.parentFile)
-        patternLayout { artifact("[artifact]-[revision].[ext]") }
-        metadataSources { artifact() }
-        content { includeGroup("bettercontent.local.notifications") }
-    }
+    localProviderRepository("celestialEventsLocal", "bettercontent.local.celestial", celestialEventsJar)
+    localProviderRepository("dimensionDrinkLocal", "bettercontent.local.dimensiondrink", dimensionDrinkJar)
+    localProviderRepository("betterContentFixesLocal", "bettercontent.local.fixes", betterContentFixesJar)
+    localProviderRepository("betterContentNotificationsLocal", "bettercontent.local.notifications", notificationsJar)
 }
 
 dependencies {
@@ -147,6 +207,11 @@ dependencies {
     implementation(jarJar("io.github.llamalad7:mixinextras-forge:[0.5.0,0.6.0)")!!)
     implementation(jarJar("net.java.dev.jna:jna:[5.14.0,5.14.0]")!!)
     implementation(jarJar("net.java.dev.jna:jna-platform:[5.14.0,5.14.0]")!!)
+    compileOnly(fg.deobf("bettercontent.local.celestial:better-celestial-events:0.1.0"))
+    // Default native gate proves the optional provider can be absent. Opt in for the present profile.
+    if (providers.gradleProperty("celestialRuntime").orNull == "true") {
+        runtimeOnly(fg.deobf("bettercontent.local.celestial:better-celestial-events:0.1.0"))
+    }
     compileOnly(fg.deobf("bettercontent.local.dimensiondrink:better-dimension-fonts:1.0.0"))
     // ForgeGradle's GameTest launch uses the main runtime classpath. Keep the
     // provider mod available there as well as at compile time.
@@ -161,6 +226,10 @@ dependencies {
     compileOnly(fg.deobf("curse.maven:pollution-of-the-realms-269973:8554528"))
     compileOnly(fg.deobf("curse.maven:little-logistics-570050:4799459"))
     compileOnly(fg.deobf("curse.maven:weather-storms-tornadoes-237746:5244118"))
+    // Native bytecode contracts for the optional campfire smoke integration, not runtime requirements.
+    testRuntimeOnly(fg.deobf("curse.maven:advanced-chimneys-244830:8499852"))
+    testRuntimeOnly(fg.deobf("curse.maven:forgeendertech-244844:8554308"))
+    testRuntimeOnly(fg.deobf("curse.maven:weather-storms-tornadoes-237746:5244118"))
     compileOnly(fg.deobf("curse.maven:creativecore-257814:7649757"))
     compileOnly(fg.deobf("curse.maven:ambientsounds-254284:7550220"))
     compileOnly(fg.deobf("curse.maven:oculus-581495:6020952"))
@@ -186,6 +255,10 @@ dependencies {
     runtimeOnly(fg.deobf("curse.maven:curios-api-309927:6418456"))
     runtimeOnly(fg.deobf("curse.maven:lodestone-616457:6213794"))
     runtimeOnly(fg.deobf("curse.maven:malum-484064:6646111"))
+    // Exact committed pack pin; Malum ships unconditional jeed:effect_provider recipes.
+    // Dev/native runtime only, not a production Commerce dependency or bundled artifact.
+    runtimeOnly(fg.deobf("curse.maven:jeed-532286:6172935"))
+    runtimeOnly(fg.deobf("curse.maven:jei-238222:7920915"))
     runtimeOnly(fg.deobf("curse.maven:rats-323596:5904296"))
     runtimeOnly(fg.deobf("curse.maven:citadel-331936:7476570"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
@@ -212,6 +285,13 @@ val stageRuntimeJar by tasks.registering(Copy::class) {
                 "staged Spirit Commerce JAR lacks its production mixin refmap: $staged"
             }
         }
+        val runtime = destinationDir.resolve("${base.archivesName.get()}-$version.jar")
+        val profileOnly = zipTree(runtime).matching {
+            include(malumAdvancementFixes.map { "data/malum/advancements/recipes/$it.json" })
+            include("data/malum/recipes/create/crushing/crush_rare_earths.json")
+            include("com/bettercontent/spiritcommerce/nativefixture/**")
+        }
+        check(profileOnly.isEmpty) { "Native-only pack fixes leaked into the production Commerce JAR" }
     }
 }
 
@@ -236,19 +316,28 @@ tasks.withType<JavaExec>().configureEach {
 }
 
 tasks.test {
+    dependsOn(tasks.named(nativeFixture.processResourcesTaskName))
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
 }
+
+val nativeDiagnosticsTest by tasks.registering(Exec::class) {
+    group = "verification"
+    dependsOn(tasks.named("classes"))
+    commandLine("python3", "-B", "-m", "unittest", "discover", "-s", "scripts", "-p", "test_native_diagnostics.py")
+}
+tasks.named("check") { dependsOn(nativeDiagnosticsTest) }
 
 tasks.register("headlessGameTest") {
     group = "verification"
     description = "Runs Forge game tests in a headless dedicated server."
     dependsOn(tasks.named("runGameTestServer"))
     doLast {
-        val log = file("run-gametest/logs/latest.log")
+        val log = nativeGameTestDirectory.get().file("logs/latest.log").asFile
         check(log.isFile && Regex("All [0-9]+ required tests passed").containsMatchIn(log.readText())) {
             "Forge GameTests did not pass; inspect ${log.absolutePath}"
         }
+        exec { commandLine("python3", "-B", "scripts/check_native_diagnostics.py", log.absolutePath) }
     }
 }
 
@@ -263,6 +352,7 @@ tasks.register("verifyFull") {
     description = "Runs the full verification lane including headless Forge game tests."
     dependsOn(tasks.named("verifyFast"))
     dependsOn(tasks.named("headlessGameTest"))
+    dependsOn("verifyNativeRunFixture")
 }
 
 tasks.register("verifyVisualHarness") {
@@ -297,19 +387,49 @@ tasks.register("verifyMarketVisualHarness") {
     }
 }
 
-val resetGameTestMods = tasks.register<Delete>("resetGameTestMods") {
-    delete(layout.projectDirectory.dir("run-gametest/mods"))
-    delete(layout.projectDirectory.dir("run-gametest/world"))
+val resetGameTestMods = tasks.register("resetGameTestMods") {
+    description = "Prepares an isolated UUID GameTest directory without deleting prior fixtures."
+    doLast { nativeGameTestDirectory.get().asFile.mkdirs() }
+}
+
+tasks.register("verifyNativeRunFixture") {
+    group = "verification"
+    doLast {
+        check(file(minecraft.runs.getByName("gameTestServer").workingDirectory).canonicalFile ==
+            nativeGameTestDirectory.get().asFile.canonicalFile) { "Native RunConfig/setup directory mismatch" }
+        val fixture = layout.buildDirectory.dir("native-run-guard/${UUID.randomUUID()}").get().asFile
+        provisionNativeProperties(fixture)
+        val properties = fixture.resolve("server.properties")
+        check(properties.readText() == "online-mode=false\nenforce-secure-profile=false\n")
+        val custom = "# retained exact bytes\r\nonline-mode=true\r\n".toByteArray()
+        properties.writeBytes(custom)
+        provisionNativeProperties(fixture)
+        check(properties.readBytes().contentEquals(custom)) { "Existing native properties overwritten" }
+    }
 }
 
 val syncGameTestStructures = tasks.register<Sync>("syncGameTestStructures") {
     from(layout.projectDirectory.dir("src/main/resources/gameteststructures"))
-    into(layout.projectDirectory.dir("run-gametest/gameteststructures"))
+    into(nativeGameTestDirectory.map { it.dir("gameteststructures") })
+}
+
+val prepareNativeRuntime by tasks.registering {
+    dependsOn(resetGameTestMods, tasks.named("compileJava"), tasks.named("processResources"),
+        tasks.named(nativeFixture.processResourcesTaskName))
+    doLast {
+        check(layout.buildDirectory.file("resources/nativeFixture/better_spirit_commerce.refmap.json").get().asFile.isFile) {
+            "Native dev classpath is missing its generated mixin refmap"
+        }
+        provisionNativeProperties(nativeGameTestDirectory.get().asFile)
+        nativeGameTestDirectory.get().file("native-diagnostic-nonce").asFile.writeText(UUID.randomUUID().toString())
+    }
 }
 
 tasks.matching { it.name.startsWith("prepareRunGameTestServer") }.configureEach {
     dependsOn(resetGameTestMods)
     dependsOn(syncGameTestStructures)
+    dependsOn(prepareNativeRuntime)
+    dependsOn(tasks.named(nativeFixture.classesTaskName))
 }
 
 tasks.processResources {

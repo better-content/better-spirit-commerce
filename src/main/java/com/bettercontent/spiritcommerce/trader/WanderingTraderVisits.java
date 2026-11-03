@@ -1,6 +1,12 @@
 package com.bettercontent.spiritcommerce.trader;
 
 import com.bettercontent.spiritcommerce.config.EconomyConfig;
+import com.bettercontent.spiritcommerce.diagnostics.PlaytestDiagnostics;
+import com.bettercontent.spiritcommerce.diagnostics.PlaytestLog;
+import com.bettercontent.spiritcommerce.api.event.SpiritAcquiredEvent;
+import com.bettercontent.spiritcommerce.spirit.CurrencyIdentity;
+import java.util.Comparator;
+import net.minecraft.server.level.ServerPlayer;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -14,8 +20,38 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public final class WanderingTraderVisits {
     public static final String THEME_TAG = "better_spirit_commerce:wandering_trader_theme";
+    static final String EXPIRY_TAG = "better_spirit_commerce:visit_expiry";
+    public static final long VISIT_TICKS = 7L * 24_000L;
+    public static final int MIN_INTERVAL_TICKS = 5 * 12_000;
+    public static final int MAX_INTERVAL_TICKS = 9 * 12_000;
+    public static final int PLACEMENT_RETRY_TICKS = 1_200;
+
+    static int nextInterval(net.minecraft.util.RandomSource random) {
+        return MIN_INTERVAL_TICKS + random.nextInt(MAX_INTERVAL_TICKS - MIN_INTERVAL_TICKS + 1);
+    }
 
     private WanderingTraderVisits() {
+    }
+
+    @SubscribeEvent
+    public static void onSpiritAcquired(final SpiritAcquiredEvent event) {
+        final ServerPlayer player = event.getPlayer();
+        if (!player.isAlive() || player.isSpectator()) return;
+        final ServerLevel overworld = player.serverLevel().getServer().overworld();
+        SpiritCollectionHistory.get(overworld).record(player.getUUID(),
+                CurrencyIdentity.fromItemId(event.getSpiritId()), event.getCount(), overworld.getGameTime());
+    }
+
+    static ServerPlayer collectionAnchor(final ServerLevel level, final WanderingTrader trader) {
+        return collectionAnchor(level.players(), trader);
+    }
+
+    static ServerPlayer collectionAnchor(final java.util.List<ServerPlayer> players, final WanderingTrader trader) {
+        return players.stream()
+                .filter(player -> player.isAlive() && !player.isSpectator())
+                .min(Comparator.comparingDouble((ServerPlayer player) -> player.distanceToSqr(trader))
+                        .thenComparing(ServerPlayer::getUUID))
+                .orElse(null);
     }
 
     @SubscribeEvent
@@ -31,6 +67,7 @@ public final class WanderingTraderVisits {
             applyTheme(trader, WanderingTraderTheme.forUuid(trader.getUUID()), false);
         }
         TraderCampService.restoreOnJoin(trader);
+        if (trader.isRemoved()) event.setCanceled(true);
     }
 
     public static int tickScheduledVisit(
@@ -47,50 +84,111 @@ public final class WanderingTraderVisits {
         }
 
         final long gameTime = level.getGameTime();
+        TraderCampService.expireOrdinaryVisits(level);
+        if (level.players().stream().noneMatch(player -> eligibleAnchor(level, player))) return 0;
         final WanderingTraderScheduleData schedule = WanderingTraderScheduleData.get(level);
-        schedule.initializeIfNeeded(gameTime, EconomyConfig.wanderingTraderInitialDelay());
-        if (!schedule.isVisitDue(gameTime)) {
-            return 0;
+        if (!schedule.initialized()) {
+            int interval = nextInterval(level.random);
+            schedule.initializeIfNeeded(gameTime, interval);
+            if (PlaytestDiagnostics.LOG.enabled("visits")) PlaytestDiagnostics.LOG.event(
+                    "visits", "trader.schedule", "server", "initialized", "first_eligible_tick",
+                    () -> PlaytestLog.fields("tick", gameTime, "interval_ticks", interval));
         }
-        if (level.players().isEmpty()) {
-            schedule.scheduleRetry(gameTime, EconomyConfig.wanderingTraderRetryDelay());
-            return 0;
-        }
-
-        final UUID activeId = schedule.activeTraderId();
-        if (activeId != null) {
-            final Entity activeEntity = level.getEntity(activeId);
-            if (activeEntity instanceof WanderingTrader && activeEntity.isAlive()) {
-                schedule.scheduleRetry(gameTime, EconomyConfig.wanderingTraderRetryDelay());
-                return 0;
-            }
-            schedule.clearActiveTrader();
-        }
-
+        if (!schedule.isVisitDue(gameTime)) return 0;
+        // A failed site keeps this arrival pending; never roll another multi-day interval.
+        schedule.scheduleRetry(gameTime, PLACEMENT_RETRY_TICKS);
+        final UUID previousId = levelData.getWanderingTraderId();
+        final java.util.Set<UUID> before = new java.util.HashSet<>();
+        level.getAllEntities().forEach(entity -> before.add(entity.getUUID()));
         if (!spawnAttempt.spawn(level)) {
-            schedule.scheduleRetry(gameTime, EconomyConfig.wanderingTraderRetryDelay());
+            rollbackSpawn(level, levelData, previousId, before);
+            visitOutcome(VisitOutcome.SPAWN_REJECTED, gameTime);
             return 0;
         }
 
         final UUID traderId = levelData.getWanderingTraderId();
         final Entity spawnedEntity = traderId == null ? null : level.getEntity(traderId);
-        if (!(spawnedEntity instanceof WanderingTrader trader)) {
-            schedule.scheduleRetry(gameTime, EconomyConfig.wanderingTraderRetryDelay());
+        if (!(spawnedEntity instanceof WanderingTrader trader) || before.contains(traderId)) {
+            rollbackSpawn(level, levelData, previousId, before);
+            visitOutcome(VisitOutcome.TRADER_MISSING, gameTime);
             return 0;
         }
 
-        final WanderingTraderTheme theme = schedule.nextTheme();
-        applyTheme(trader, theme, true);
-        if (!TraderCampService.createForVisit(trader, theme)) {
-            trader.discard();
-            schedule.scheduleRetry(gameTime, EconomyConfig.wanderingTraderRetryDelay());
+        final ServerPlayer anchor = level.players().stream().filter(player -> eligibleAnchor(level, player))
+                .filter(player -> player.distanceToSqr(trader) <= 256.0D * 256.0D)
+                .min(Comparator.comparingDouble((ServerPlayer player) -> player.distanceToSqr(trader))
+                        .thenComparing(ServerPlayer::getUUID)).orElse(null);
+        if (anchor == null) {
+            rollbackSpawn(level, levelData, previousId, before);
+            visitOutcome(VisitOutcome.ANCHOR_MISSING, gameTime);
             return 0;
         }
-        schedule.completeVisit(gameTime, EconomyConfig.wanderingTraderVisitInterval(), trader.getUUID());
+        // The Founders transaction only chooses the first currency. It does not bypass the
+        // scheduled date, placement, camp, or finite stock checks above and below.
+        final WanderingTraderTheme theme;
+        if (schedule.hasPendingFirstCurrency()) {
+            theme = schedule.nextTheme();
+        } else {
+            var affordable = TraderAffordability.affordableThemes(anchor);
+            theme = SpiritCollectionHistory.get(level).selectTheme(anchor.getUUID(), gameTime, level.random,
+                    affordable.isEmpty() ? java.util.List.of(WanderingTraderTheme.values()) : affordable);
+        }
+        trader.getPersistentData().putLong(EXPIRY_TAG, gameTime + VISIT_TICKS);
+        trader.setDespawnDelay((int) VISIT_TICKS);
+        applyTheme(trader, theme, true);
+        if (!TraderCampService.createForVisit(trader, theme)) {
+            rollbackSpawn(level, levelData, previousId, before);
+            visitOutcome(VisitOutcome.CAMP_REJECTED, gameTime);
+            return 0;
+        }
+        TraderCampData.forTrader(trader).begin(anchor.getUUID(), anchor.blockPosition(), gameTime + VISIT_TICKS);
+        schedule.completeVisit(gameTime, nextInterval(level.random), trader.getUUID());
+        if (PlaytestDiagnostics.LOG.enabled("visits")) PlaytestDiagnostics.LOG.event(
+                "visits", "trader.visit", "server", VisitOutcome.COMMITTED.result(), VisitOutcome.COMMITTED.reason(),
+                () -> PlaytestLog.fields("trader", trader.getUUID(), "theme", theme.id(), "tick", gameTime, "expiry_tick", gameTime + VISIT_TICKS));
         if (EconomyConfig.wanderingTraderAnnounceArrival()) {
             announceArrival(level, trader, theme);
         }
         return 1;
+    }
+
+    private static void visitOutcome(VisitOutcome outcome, long tick) {
+        if (PlaytestDiagnostics.LOG.enabled("visits")) PlaytestDiagnostics.LOG.event(
+                "visits", "trader.visit", "server", outcome.result(), outcome.reason(),
+                () -> PlaytestLog.fields("tick", tick, "retry_ticks", PLACEMENT_RETRY_TICKS));
+    }
+
+    public static ServerPlayer randomEligiblePlayer(final ServerLevel level) {
+        final var eligible = level.players().stream()
+                .filter(player -> eligibleAnchor(level, player)).toList();
+        return eligible.isEmpty() ? null : eligible.get(level.random.nextInt(eligible.size()));
+    }
+
+    static boolean eligibleAnchor(ServerLevel level, ServerPlayer player) {
+        return !player.isSpectator();
+    }
+
+    private static void rollbackSpawn(ServerLevel level, ServerLevelData data, UUID previous,
+                                      java.util.Set<UUID> before) {
+        UUID id = data.getWanderingTraderId();
+        Entity entity = id == null || before.contains(id) ? null : level.getEntity(id);
+        if (entity instanceof WanderingTrader trader) {
+            // EntityLookup exposes a live fastutil values view. Discard synchronously removes from
+            // that lookup and can shift its hash cluster underneath the iterator, skipping a companion
+            // (or returning null). Finish discovery before mutating any native entity membership.
+            final var createdLlamas = new java.util.ArrayList<net.minecraft.world.entity.animal.horse.TraderLlama>();
+            for (Entity candidate : level.getAllEntities()) {
+                if (candidate instanceof net.minecraft.world.entity.animal.horse.TraderLlama llama
+                        && !before.contains(llama.getUUID())) createdLlamas.add(llama);
+            }
+            for (var llama : createdLlamas) {
+                // Recheck ownership immediately before removal; discovery itself grants no ownership.
+                if (!llama.isTamed() && llama.getOwnerUUID() == null && llama.getLeashHolder() == trader) llama.discard();
+            }
+            TraderCampData.forTrader(trader).clear(trader.getUUID());
+            trader.discard();
+        }
+        data.setWanderingTraderId(previous);
     }
 
     public static void applyTheme(
@@ -104,7 +202,7 @@ public final class WanderingTraderVisits {
         }
     }
 
-    private static void announceArrival(
+    static void announceArrival(
             final ServerLevel level,
             final WanderingTrader trader,
             final WanderingTraderTheme theme) {

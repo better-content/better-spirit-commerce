@@ -24,6 +24,7 @@ final class TraderCampGoal extends Goal {
 
     @Override
     public void tick() {
+        if (trader.tickCount % 20 == 0) TraderCampFireService.maintain(trader);
         if (trader.isLeashed()) {
             trader.getNavigation().stop();
             stuckTicks = 0;

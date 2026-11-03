@@ -29,6 +29,41 @@ final class TraderCampDataTest {
     }
 
     @Test
+    void firePositionPersistsButRelocationOrDepartureInvalidatesIt() {
+        UUID trader = UUID.randomUUID();
+        TraderCampData data = new TraderCampData();
+        BlockPos post = new BlockPos(10, 65, 10);
+        BlockPos fire = post.east(2);
+        data.setTarget(trader, "minecraft:overworld", post, Direction.NORTH);
+        data.setFirePos(fire);
+        TraderCampData loaded = TraderCampData.load(data.save(new CompoundTag()));
+        assertEquals(fire, loaded.firePos());
+        loaded.setTarget(trader, "minecraft:overworld", post.east(20), Direction.NORTH);
+        assertEquals(null, loaded.firePos(), "An unloaded old fire must become obsolete on retarget");
+        loaded.setFirePos(fire);
+        loaded.clear(trader);
+        assertEquals(null, loaded.firePos());
+    }
+
+    @Test
+    void visitOwnerLocalityAndDeadlineSurviveRestartAndRelocation() {
+        UUID trader = UUID.randomUUID(), player = UUID.randomUUID();
+        TraderCampData data = new TraderCampData();
+        BlockPos anchor = new BlockPos(100, 70, 100);
+        data.setTarget(trader, "minecraft:overworld", anchor, Direction.NORTH);
+        data.begin(player, anchor, 12_345);
+        data.setTarget(trader, "minecraft:overworld", anchor.east(600), Direction.WEST);
+        TraderCampData loaded = TraderCampData.load(data.save(new CompoundTag()));
+        assertEquals(player, loaded.anchorOwner());
+        assertEquals(12_345, loaded.expiresAt());
+        assertFalse(loaded.expired(12_344));
+        assertTrue(loaded.expired(12_345));
+        assertTrue(loaded.near(anchor.east(256)));
+        assertTrue(loaded.near(anchor.east(600)));
+        assertFalse(loaded.near(anchor.east(300)));
+    }
+
+    @Test
     void clearOnlyRemovesTheMatchingTraderLink() {
         UUID trader = UUID.fromString("843c67c3-7eb8-4f47-8b14-646c7c13aade");
         TraderCampData data = new TraderCampData();

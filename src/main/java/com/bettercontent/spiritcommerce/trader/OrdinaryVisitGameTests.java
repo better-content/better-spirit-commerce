@@ -1,0 +1,294 @@
+package com.bettercontent.spiritcommerce.trader;
+
+import com.mojang.authlib.GameProfile;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.animal.horse.TraderLlama;
+import net.minecraft.world.entity.npc.WanderingTrader;
+import net.minecraft.world.entity.npc.WanderingTraderSpawner;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.storage.ServerLevelData;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.FakePlayerFactory;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.gametest.GameTestHolder;
+
+/** Real native spawner/mixin integration, not a replacement SpawnAttempt. */
+@GameTestHolder("better_spirit_commerce")
+@net.minecraftforge.gametest.PrefixGameTestTemplate(false)
+public final class OrdinaryVisitGameTests {
+    @GameTest(templateNamespace = "better_spirit_commerce", template = "empty", timeoutTicks = 200)
+    public static void nativeSpawnRollbackScheduledOverlapAndSavedDeparture(GameTestHelper helper) {
+        ServerLevel level = helper.getLevel();
+        var storage = level.getServer().overworld().getDataStorage();
+        var original = TraderCampData.get(level);
+        var originalSchedule = WanderingTraderScheduleData.get(level);
+        var data = (ServerLevelData) level.getLevelData();
+        UUID previous = data.getWanderingTraderId();
+        int oldDelay = data.getWanderingTraderSpawnDelay(), oldChance = data.getWanderingTraderSpawnChance();
+        boolean oldTrader = level.getGameRules().getBoolean(GameRules.RULE_DO_TRADER_SPAWNING);
+        boolean oldMob = level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING);
+        var player = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "native-market"));
+        var near = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "native-market-near"));
+        var far = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "native-market-far"));
+        var observer = new Insertions();
+        BlockPos site = helper.absolutePos(new BlockPos(4, 3, 4));
+        site = new BlockPos(site.getX(), level.getMaxBuildHeight() - 18, site.getZ());
+        List<WanderingTrader> admitted = new ArrayList<>();
+        TraderLlama playerOwned = net.minecraft.world.entity.EntityType.TRADER_LLAMA.create(level);
+        try {
+            storage.set("better_spirit_commerce_trader_camp", new TraderCampData());
+            var schedule = new WanderingTraderScheduleData();
+            schedule.initializeIfNeeded(level.getGameTime(), 0);
+            storage.set("better_spirit_commerce_wandering_trader", schedule);
+            level.getGameRules().getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(true, level.getServer());
+            level.getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(true, level.getServer());
+            helper.assertTrue(level.hasChunksAt(site.offset(-22, -1, -22), site.offset(22, 12, 22)), "Native fixture pad must be loaded");
+            for (int x = -22; x <= 22; x++) for (int z = -22; z <= 22; z++) {
+                level.setBlockAndUpdate(site.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+            }
+            for (var anchor : List.of(player, near, far)) {
+                anchor.setGameMode(GameType.SURVIVAL);
+                anchor.getInventory().clearContent();
+                anchor.moveTo(site.getX(), site.getY(), site.getZ());
+            }
+            far.moveTo(site.getX() + 10000, site.getY(), site.getZ());
+            level.players().add(player);
+            playerOwned.moveTo(site.getX(), site.getY(), site.getZ());
+            playerOwned.setTamed(true);
+            playerOwned.setOwnerUUID(player.getUUID());
+            level.addFreshEntity(playerOwned);
+            MinecraftForge.EVENT_BUS.register(observer);
+            WanderingTraderSpawner spawner = new WanderingTraderSpawner(data);
+            observer.breakCamp = true;
+            // Each observer call explicitly advances the saved attempt deadline for this native fixture.
+            for (int attempt = 0; attempt < 128 && observer.llamas.size() < 24; attempt++) {
+                observer.tick(level, data, spawner);
+                helper.assertTrue(observer.traders.stream().allMatch(Entity::isRemoved)
+                        && observer.llamas.stream().allMatch(Entity::isRemoved),
+                        "Failed camp left native trader/own llama orphaned: " + observer.describe());
+            }
+            helper.assertTrue(!observer.traders.isEmpty() && observer.llamas.size() >= 24,
+                    "Repeated actual native trader and companion insertion not exercised");
+            helper.assertTrue(java.util.Objects.equals(previous, data.getWanderingTraderId()), "Rollback did not restore native UUID");
+            helper.assertTrue(TraderCampData.ordinaryTraderIds(level).isEmpty(), "Failed camp retained admission");
+            helper.assertTrue(playerOwned.isAlive() && !playerOwned.isRemoved(), "Rollback removed an unrelated player-owned llama");
+            observer.protectOwner = player.getUUID();
+            int llamaCount = observer.llamas.size();
+            for (int attempt = 0; attempt < 128 && observer.llamas.size() == llamaCount; attempt++) observer.tick(level, data, spawner);
+            helper.assertTrue(observer.llamas.size() > llamaCount, "Native owned-companion negative not exercised");
+            helper.assertTrue(observer.llamas.subList(llamaCount, observer.llamas.size()).stream()
+                    .allMatch(llama -> !llama.isRemoved() && player.getUUID().equals(llama.getOwnerUUID())),
+                    "Rollback deleted newly player-owned companions");
+            observer.protectOwner = null;
+            observer.breakCamp = false;
+            WanderingTrader trader = spawn(helper, level, data, spawner, observer);
+            admitted.add(trader);
+            TraderCampData camp = TraderCampData.forTrader(trader);
+            long expiry = camp.expiresAt();
+            helper.assertTrue(expiry == level.getGameTime() + 168000 && player.getUUID().equals(camp.anchorOwner()), "Immutable lifetime/owner missing");
+            long nextArrival = schedule.nextAttemptGameTime();
+            helper.assertTrue(nextArrival >= level.getGameTime() + WanderingTraderVisits.MIN_INTERVAL_TICKS
+                    && nextArrival <= level.getGameTime() + WanderingTraderVisits.MAX_INTERVAL_TICKS,
+                    "Successful arrival did not schedule 2.5–4.5 days ahead");
+            helper.assertTrue(spawner.tick(level, true, true) == 0, "Scheduled interval bypassed");
+            helper.assertTrue(WanderingTraderVisits.eligibleAnchor(level, near)
+                    && WanderingTraderVisits.eligibleAnchor(level, far), "Camp occupancy still gates players");
+            // A due arrival can overlap the existing local camp without funds.
+            WanderingTrader overlap = spawn(helper, level, data, spawner, observer);
+            admitted.add(overlap);
+            helper.assertTrue(trader.isAlive(), "Overlapping visit displaced first trader");
+            long overlapDeadline = schedule.nextAttemptGameTime();
+            TraderCampService.depart(trader, level);
+            helper.assertTrue(overlap.getUUID().equals(schedule.activeTraderId())
+                    && schedule.nextAttemptGameTime() == overlapDeadline, "Older departure disturbed newer schedule");
+            trader = overlap;
+            camp = TraderCampData.forTrader(trader);
+            expiry = camp.expiresAt();
+            // A second real native visit in a separately authored, explicitly loaded region.
+            BlockPos remote = site.east(640);
+            for (int cx = (remote.getX() - 28) >> 4; cx <= (remote.getX() + 28) >> 4; cx++)
+                for (int cz = (remote.getZ() - 28) >> 4; cz <= (remote.getZ() + 28) >> 4; cz++) level.getChunk(cx, cz);
+            helper.assertTrue(level.hasChunksAt(remote.offset(-28, 0, -28), remote.offset(28, 0, 28)), "Remote fixture chunks not loaded");
+            for (int x = -22; x <= 22; x++) for (int z = -22; z <= 22; z++)
+                level.setBlockAndUpdate(remote.offset(x, -1, z), Blocks.STONE.defaultBlockState());
+            far.moveTo(remote.getX(), remote.getY(), remote.getZ());
+            level.players().remove(player);
+            level.players().add(far);
+            WanderingTrader remoteTrader = spawn(helper, level, data, spawner, observer);
+            admitted.add(remoteTrader);
+            helper.assertTrue(TraderCampData.forTrader(remoteTrader).anchorOwner().equals(far.getUUID())
+                    && trader.isAlive(), "Second regional native visit displaced or reused first visit");
+            level.players().remove(near);
+            level.players().remove(far);
+            level.players().add(player);
+            TraderCampService.depart(remoteTrader, level);
+            // Restart the actual SavedData through its NBT API while the entity remains native.
+            storage.set("better_spirit_commerce_trader_camp", TraderCampData.load(TraderCampData.get(level).save(new CompoundTag())));
+            helper.assertTrue(TraderCampData.forTrader(trader).expiresAt() == expiry
+                    && WanderingTraderVisits.eligibleAnchor(level, player), "Restart lost deadline or restored occupancy gate");
+            TraderCampService.restoreOnJoin(trader);
+            helper.assertTrue(TraderCampData.forTrader(trader).expiresAt() == expiry, "Reload renewed visit lifetime");
+            // Simulate an entity absent from the loaded entity index, retaining its saved camp.
+            CompoundTag savedTrader = new CompoundTag();
+            trader.save(savedTrader);
+            trader.remove(Entity.RemovalReason.UNLOADED_TO_CHUNK);
+            TraderCampData.forTrader(trader).begin(player.getUUID(), player.blockPosition(), level.getGameTime());
+            // Saved unloaded scenery at a location that must not be force-loaded for retirement.
+            BlockPos unloaded = site.east(10000);
+            helper.assertTrue(!level.hasChunkAt(unloaded), "Unloaded expiry fixture unexpectedly loaded");
+            BlockPos oldPost = TraderCampData.forTrader(trader).targetPos();
+            TraderCampData.forTrader(trader).setTarget(trader.getUUID(), level.dimension().location().toString(), unloaded, net.minecraft.core.Direction.NORTH);
+            TraderCampService.expireOrdinaryVisits(level);
+            helper.assertTrue(!level.hasChunkAt(unloaded), "Expiry force-loaded scenery");
+            if (level.getBlockEntity(oldPost) instanceof TraderCampPostBlockEntity post) post.onLoad();
+            helper.assertTrue(level.isEmptyBlock(oldPost), "Expired post survived saved-owner validation");
+            // Native entity NBT returning after expiration must not revive its stock/camp.
+            savedTrader.getCompound("ForgeData").putLong(WanderingTraderVisits.EXPIRY_TAG, level.getGameTime());
+            Entity reloaded = net.minecraft.world.entity.EntityType.loadEntityRecursive(savedTrader, level, entity -> entity);
+            helper.assertTrue(reloaded instanceof WanderingTrader, "Native trader NBT failed to reload");
+            level.addFreshEntity(reloaded);
+            helper.assertTrue(reloaded.isRemoved(), "Expired unloaded trader rejoined after restart");
+            helper.assertTrue(WanderingTraderVisits.eligibleAnchor(level, player), "Expired absent trader blocked travel");
+            WanderingTrader next = spawn(helper, level, data, spawner, observer);
+            admitted.add(next);
+            TraderCampService.depart(next, level);
+            helper.assertTrue(WanderingTraderVisits.eligibleAnchor(level, player), "Departure imposed an arrival wait");
+            helper.succeed();
+        } finally {
+            MinecraftForge.EVENT_BUS.unregister(observer);
+            for (WanderingTrader trader : admitted) if (!trader.isRemoved()) TraderCampService.depart(trader, level);
+            if (playerOwned != null) playerOwned.discard();
+            observer.llamas.forEach(Entity::discard);
+            observer.traders.forEach(Entity::discard);
+            level.players().remove(player);
+            level.players().remove(near);
+            level.players().remove(far);
+            storage.set("better_spirit_commerce_trader_camp", original);
+            storage.set("better_spirit_commerce_wandering_trader", originalSchedule);
+            data.setWanderingTraderId(previous);
+            data.setWanderingTraderSpawnDelay(oldDelay);
+            data.setWanderingTraderSpawnChance(oldChance);
+            level.getGameRules().getRule(GameRules.RULE_DO_TRADER_SPAWNING).set(oldTrader, level.getServer());
+            level.getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(oldMob, level.getServer());
+        }
+    }
+
+    private static WanderingTrader spawn(GameTestHelper helper, ServerLevel level, ServerLevelData data,
+                                         WanderingTraderSpawner spawner, Insertions observer) {
+        for (int attempt = 0; attempt < 128; attempt++) {
+            if (observer.tick(level, data, spawner) == 1) return (WanderingTrader) level.getEntity(data.getWanderingTraderId());
+        }
+        helper.fail("Native loaded-site admission failed across 128 immediate attempts");
+        throw new IllegalStateException();
+    }
+
+    public static final class Insertions {
+        boolean breakCamp;
+        boolean active;
+        int call;
+        int companionsInCall;
+        // Force a hash cluster in the real world's native entity lookup, independent of batch IDs.
+        // UUIDs, native EntityType.spawn, insertion, parent binding and rollback remain production paths.
+        private static final int[] COLLIDING_IDS = collisionIds();
+        UUID protectOwner;
+        final List<WanderingTrader> traders = new ArrayList<>();
+        final List<TraderLlama> llamas = new ArrayList<>();
+        int tick(ServerLevel level, ServerLevelData data, WanderingTraderSpawner spawner) {
+            // Author only the deadline, then exercise the actual public native spawner/mixin.
+            WanderingTraderScheduleData.get(level).scheduleRetry(level.getGameTime(), 0);
+            final java.util.Set<UUID> before = new java.util.HashSet<>();
+            level.getAllEntities().forEach(entity -> before.add(entity.getUUID()));
+            UUID previous = data.getWanderingTraderId();
+            int traderStart = traders.size(), llamaStart = llamas.size();
+            int result = -1;
+            RuntimeException failure = null;
+            companionsInCall = 0;
+            active = true;
+            try { result = spawner.tick(level, true, true); }
+            catch (RuntimeException exception) { failure = exception; throw exception; }
+            finally {
+                active = false;
+                call++;
+                if (traders.size() != traderStart || llamas.size() != llamaStart) {
+                    CompoundTag trace = new CompoundTag();
+                    trace.putInt("Call", call);
+                    trace.putInt("Result", result);
+                    trace.putBoolean("BreakCamp", breakCamp);
+                    if (failure != null) trace.putString("Failure", failure.toString());
+                    if (previous != null) trace.putUUID("PreviousTrader", previous);
+                    if (data.getWanderingTraderId() != null) trace.putUUID("AfterTrader", data.getWanderingTraderId());
+                    net.minecraft.nbt.ListTag inserted = new net.minecraft.nbt.ListTag();
+                    java.util.stream.Stream.concat(traders.subList(traderStart, traders.size()).stream(),
+                            llamas.subList(llamaStart, llamas.size()).stream()).forEach(entity -> {
+                        CompoundTag state = state(entity);
+                        state.putBoolean("ExistedBeforeCall", before.contains(entity.getUUID()));
+                        inserted.add(state);
+                    });
+                    trace.put("Inserted", inserted);
+                    com.mojang.logging.LogUtils.getLogger().info("ORDINARY_NATIVE_CALL {}", trace);
+                }
+            }
+            return result;
+        }
+
+        String describe() {
+            return java.util.stream.Stream.concat(traders.stream(), llamas.stream())
+                    .filter(entity -> !entity.isRemoved()).map(entity -> state(entity).toString())
+                    .collect(java.util.stream.Collectors.joining(","));
+        }
+
+        private static CompoundTag state(Entity entity) {
+            CompoundTag state = new CompoundTag();
+            state.putUUID("UUID", entity.getUUID());
+            state.putInt("NativeId", entity.getId());
+            state.putString("Type", entity.getType().toString());
+            state.putString("Position", entity.position().toString());
+            state.putBoolean("Removed", entity.isRemoved());
+            state.putBoolean("Alive", entity.isAlive());
+            if (entity instanceof TraderLlama llama) {
+                state.putBoolean("Tamed", llama.isTamed());
+                if (llama.getOwnerUUID() != null) state.putUUID("Owner", llama.getOwnerUUID());
+                if (llama.getLeashHolder() != null) state.putUUID("LeashHolder", llama.getLeashHolder().getUUID());
+            }
+            return state;
+        }
+
+        private static int[] collisionIds() {
+            int first = 1_000_000_000;
+            int bucket = it.unimi.dsi.fastutil.HashCommon.mix(first) & 0xffff;
+            for (int next = first + 1; next < first + 1_000_000; next++) {
+                if ((it.unimi.dsi.fastutil.HashCommon.mix(next) & 0xffff) == bucket) return new int[]{first, next};
+            }
+            throw new IllegalStateException("Could not prepare native entity lookup collision fixture");
+        }
+
+        @SubscribeEvent public void joined(EntityJoinLevelEvent event) {
+            if (!active) return;
+            if (event.getEntity() instanceof WanderingTrader trader) {
+                traders.add(trader);
+                if (breakCamp) trader.setPos(trader.getX(), trader.getY() + 10, trader.getZ());
+            }
+            if (event.getEntity() instanceof TraderLlama llama) {
+                if (breakCamp && protectOwner == null) {
+                    int id = COLLIDING_IDS[companionsInCall++];
+                    if (((ServerLevel) event.getLevel()).getEntity(id) != null)
+                        throw new IllegalStateException("Collision fixture reused an active native ID " + id);
+                    llama.setId(id);
+                }
+                llamas.add(llama);
+                if (protectOwner != null) llama.setOwnerUUID(protectOwner);
+            }
+        }
+    }
+}

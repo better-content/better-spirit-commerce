@@ -34,9 +34,13 @@ public final class TraderCampService {
     private TraderCampService() { }
 
     public static boolean createForVisit(final WanderingTrader trader, final WanderingTraderTheme theme) {
+        return createForVisit(trader, theme, false);
+    }
+
+    static boolean createForVisit(final WanderingTrader trader, final WanderingTraderTheme theme, final boolean fair) {
         if (!(trader.level() instanceof ServerLevel level)) return false;
         Direction facing = trader.getDirection();
-        BlockPos candidate = findPostPosition(level, trader.blockPosition(), facing);
+        BlockPos candidate = findPostPosition(level, trader.blockPosition(), facing, fair);
         if (candidate == null) return false;
         BlockState state = TraderCampRegistries.POST.get().defaultBlockState().setValue(TraderCampPostBlock.FACING, facing);
         if (!level.setBlock(candidate, state, 3)) return false;
@@ -44,19 +48,27 @@ public final class TraderCampService {
             level.setBlock(candidate, Blocks.AIR.defaultBlockState(), 3);
             return false;
         }
+        if (fair) trader.getPersistentData().putBoolean(SpiritFairVisits.FAIR_TAG, true);
         post.bind(trader, theme);
         retarget(trader, candidate, facing);
-        TraderCampData.get(level).setTarget(trader.getUUID(), level.dimension().location().toString(), candidate, facing);
+        (fair ? TraderCampData.fair(level, trader.getUUID()) : TraderCampData.ordinary(level, trader.getUUID()))
+                .setTarget(trader.getUUID(), level.dimension().location().toString(), candidate, facing);
         installCampGoals(trader);
         return true;
     }
 
-    private static BlockPos findPostPosition(final ServerLevel level, final BlockPos traderPos, final Direction facing) {
+    private static BlockPos findPostPosition(final ServerLevel level, final BlockPos traderPos, final Direction facing,
+                                             final boolean fair) {
         Direction side = facing.getClockWise();
         for (int distance = 2; distance <= 4; distance++) {
             for (int sideways : List.of(0, -1, 1, -2, 2)) {
                 BlockPos pos = traderPos.relative(facing.getOpposite(), distance).relative(side, sideways);
-                if (level.isEmptyBlock(pos) && level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)
+                if (level.hasChunksAt(pos.offset(-3, -1, -3), pos.offset(3, 3, 3))
+                        && level.getWorldBorder().isWithinBounds(pos)
+                        && level.isEmptyBlock(pos) && level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)
+                        && (!fair || level.isEmptyBlock(pos.relative(facing)) && level.isEmptyBlock(pos.relative(facing).above())
+                                && level.getBlockState(pos.relative(facing).below()).isValidSpawn(
+                                level, pos.relative(facing).below(), net.minecraft.world.entity.EntityType.WANDERING_TRADER))
                         && level.isEmptyBlock(pos.above())
                         && level.noCollision(null, new AABB(pos).inflate(1.6D, 0.0D, 1.6D))) {
                     return pos;
@@ -67,8 +79,23 @@ public final class TraderCampService {
     }
 
     public static void restoreOnJoin(final WanderingTrader trader) {
-        if (!(trader.level() instanceof ServerLevel level) || !isActiveScheduledTrader(trader)) return;
-        TraderCampData data = TraderCampData.get(level);
+        if (!(trader.level() instanceof ServerLevel level)) return;
+        if (!SpiritFairVisits.isFair(trader) && trader.getPersistentData().contains(CAMP_POS_TAG)
+                && !trader.getPersistentData().contains(WanderingTraderVisits.EXPIRY_TAG)) {
+            TraderCampData camp = TraderCampData.forTrader(trader);
+            if (camp.belongsTo(trader.getUUID()) && camp.expiresAt() == 0)
+                camp.begin(trader.getUUID(), camp.targetPos(), level.getGameTime() + WanderingTraderVisits.VISIT_TICKS);
+            trader.getPersistentData().putLong(WanderingTraderVisits.EXPIRY_TAG, camp.expiresAt());
+        }
+        if (!SpiritFairVisits.isFair(trader) && trader.getPersistentData().contains(WanderingTraderVisits.EXPIRY_TAG)
+                && (level.getGameTime() >= trader.getPersistentData().getLong(WanderingTraderVisits.EXPIRY_TAG)
+                    || !TraderCampData.forTrader(trader).belongsTo(trader.getUUID()))) {
+            depart(trader, level);
+            return;
+        }
+        if (!isActiveScheduledTrader(trader)) return;
+        if (SpiritFairVisits.isFair(trader) && !SpiritFairVisits.maintain(trader)) return;
+        TraderCampData data = TraderCampData.forTrader(trader);
         if (!data.belongsTo(trader.getUUID()) || !data.dimension().equals(level.dimension().location().toString())) return;
         retarget(trader, data.targetPos(), data.facing());
         installCampGoals(trader);
@@ -76,11 +103,15 @@ public final class TraderCampService {
 
     public static boolean isActiveScheduledTrader(final WanderingTrader trader) {
         if (!(trader.level() instanceof ServerLevel level)) return false;
-        UUID active = WanderingTraderScheduleData.get(level.getServer().overworld()).activeTraderId();
-        return trader.getUUID().equals(active);
+        if (SpiritFairVisits.isFair(trader)) return true;
+        return TraderCampData.hasOrdinaryVisit(level, trader.getUUID());
     }
 
     static void retarget(final WanderingTrader trader, final BlockPos post, final Direction facing) {
+        if (trader.getPersistentData().contains(CAMP_POS_TAG)
+                && (trader.getPersistentData().getLong(CAMP_POS_TAG) != post.asLong() || facing(trader) != facing)) {
+            TraderCampFireService.remove((ServerLevel) trader.level(), TraderCampData.forTrader(trader), trader.getUUID());
+        }
         trader.getPersistentData().putLong(CAMP_POS_TAG, post.asLong());
         trader.getPersistentData().putString(CAMP_FACING_TAG, facing.getName());
         trader.getPersistentData().remove(STUCK_TICKS_TAG);
@@ -113,6 +144,7 @@ public final class TraderCampService {
     public static void onTraderJoin(final EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof WanderingTrader trader && !event.getLevel().isClientSide()) {
             restoreOnJoin(trader);
+            if (trader.isRemoved()) event.setCanceled(true);
         }
     }
 
@@ -121,10 +153,6 @@ public final class TraderCampService {
         if (!(event.getLevel() instanceof ServerLevel level)
                 || !(level.getBlockEntity(event.getPos()) instanceof TraderCampPostBlockEntity post)) return;
         post.retargetLinkedTrader();
-        if (post.traderId() != null) {
-            TraderCampData.get(level).setTarget(post.traderId(), level.dimension().location().toString(),
-                    event.getPos(), event.getPlacedBlock().getValue(TraderCampPostBlock.FACING));
-        }
     }
 
     @SubscribeEvent
@@ -138,11 +166,32 @@ public final class TraderCampService {
     public static void onServerTick(final TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || event.getServer().getTickCount() % STOCK_CHECK_INTERVAL != 0) return;
         ServerLevel level = event.getServer().overworld();
-        UUID traderId = WanderingTraderScheduleData.get(level).activeTraderId();
-        Entity entity = traderId == null ? null : level.getEntity(traderId);
-        if (!(entity instanceof WanderingTrader trader) || !trader.isAlive()) return;
-        trader.setDespawnDelay(48_000);
-        if (stockEmpty(trader, level)) depart(trader, level);
+        expireOrdinaryVisits(level);
+        for (UUID traderId : TraderCampData.ordinaryTraderIds(level)) {
+            Entity entity = level.getEntity(traderId);
+            if (entity instanceof WanderingTrader trader && trader.isAlive() && stockEmpty(trader, level)) {
+                depart(trader, level);
+            }
+        }
+    }
+
+    static void expireOrdinaryVisits(ServerLevel level) {
+        for (UUID id : TraderCampData.ordinaryTraderIds(level)) {
+            TraderCampData camp = TraderCampData.ordinary(level, id);
+            if (!camp.belongsTo(id)) { camp.clear(id); continue; }
+            // Pre-duration records acquire one bounded lifetime, never a renewed keepalive.
+            if (camp.expiresAt() == 0) camp.begin(id, camp.targetPos(), level.getGameTime() + WanderingTraderVisits.VISIT_TICKS);
+            Entity entity = level.getEntity(id);
+            if (!camp.expired(level.getGameTime()) && (entity == null || entity.isAlive())) continue;
+            if (entity instanceof WanderingTrader trader) depart(trader, level);
+            else {
+                TraderCampFireService.remove(level, camp, id);
+                BlockPos pos = camp.targetPos();
+                if (level.hasChunkAt(pos) && level.getBlockEntity(pos) instanceof TraderCampPostBlockEntity post
+                        && id.equals(post.traderId())) level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                camp.clear(id);
+            }
+        }
     }
 
     public static boolean stockEmpty(final WanderingTrader trader, final ServerLevel level) {
@@ -153,14 +202,22 @@ public final class TraderCampService {
     }
 
     static void depart(final WanderingTrader trader, final ServerLevel level) {
-        long packedPos = trader.getPersistentData().getLong(CAMP_POS_TAG);
-        if (trader.getPersistentData().contains(CAMP_POS_TAG)
-                && level.getBlockEntity(BlockPos.of(packedPos)) instanceof TraderCampPostBlockEntity post
+        TraderCampData camp = TraderCampData.forTrader(trader);
+        boolean fair = SpiritFairVisits.isFair(trader);
+        TraderCampFireService.remove(level, camp, trader.getUUID());
+        BlockPos postPos = fair && camp.belongsTo(trader.getUUID()) ? camp.targetPos()
+                : BlockPos.of(trader.getPersistentData().getLong(CAMP_POS_TAG));
+        ServerLevel campLevel = fair ? level.getServer().overworld() : level;
+        if (trader.getPersistentData().contains(CAMP_POS_TAG) && campLevel.hasChunkAt(postPos)
+                && campLevel.getBlockEntity(postPos) instanceof TraderCampPostBlockEntity post
                 && trader.getUUID().equals(post.traderId())) {
-            level.setBlock(BlockPos.of(packedPos), Blocks.AIR.defaultBlockState(), 3);
+            campLevel.setBlock(postPos, Blocks.AIR.defaultBlockState(), 3);
         }
-        TraderCampData.get(level).clear(trader.getUUID());
-        WanderingTraderScheduleData.get(level).clearActiveTrader();
+        camp.clear(trader.getUUID());
+        if (!fair) {
+            WanderingTraderScheduleData schedule = WanderingTraderScheduleData.get(level);
+            if (trader.getUUID().equals(schedule.activeTraderId())) schedule.clearActiveTrader();
+        }
         trader.discard();
     }
 

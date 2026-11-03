@@ -12,11 +12,7 @@ public final class AuthoredMerchantStock {
     private AuthoredMerchantStock() {}
 
     public static boolean manages(final AbstractVillager merchant, final MerchantOffer offer) {
-        if (merchant == null || offer == null) return false;
-        ResourceLocation seller = ForgeRegistries.ENTITY_TYPES.getKey(merchant.getType());
-        ResourceLocation commodity = ForgeRegistries.ITEMS.getKey(offer.getResult().getItem());
-        boolean authoredDailyOffer = PlagueDoctorCatalogue.isAuthoredDailyOffer(merchant, offer);
-        return manages(seller, commodity, authoredDailyOffer);
+        return merchant != null && offer != null && AuthoredStockPolicy.isFinite(offer);
     }
 
     static boolean manages(final ResourceLocation sellerType, final ResourceLocation commodity) {
@@ -25,8 +21,8 @@ public final class AuthoredMerchantStock {
 
     static boolean manages(final ResourceLocation sellerType, final ResourceLocation commodity,
                            final boolean authoredDailyOffer) {
-        return AuthoredStockPolicy.isFinite(commodity)
-                && !(PlagueDoctorCatalogue.PLAGUE_DOCTOR.equals(sellerType) && authoredDailyOffer);
+        // A daily Doctor refresh changes its local menu, not shared physical import stock.
+        return AuthoredStockPolicy.isFinite(commodity);
     }
 
     public static boolean canPickup(final AbstractVillager merchant, final MerchantOffer offer,
@@ -38,7 +34,7 @@ public final class AuthoredMerchantStock {
     public static boolean canPickup(final Merchant merchant, final MerchantOffer offer,
                                     final ServerLevel level) {
         if (merchant instanceof AbstractVillager villager) return canPickup(villager, offer, level);
-        return offer == null || !managesCustomMerchantOutput(false,
+        return offer == null || !AuthoredStockPolicy.isFinite(offer) || !managesCustomMerchantOutput(false,
                 net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(offer.getResult().getItem()))
                 || AuthoredStockData.get(level).canPurchase(offer);
     }
@@ -51,7 +47,8 @@ public final class AuthoredMerchantStock {
     /** AbstractVillager trades are debited by Forge's successful-trade event; this covers other Merchant types. */
     public static void recordCustomMerchantTrade(final Merchant merchant, final MerchantOffer offer,
                                                  final ServerLevel level) {
-        if (offer == null || !managesCustomMerchantOutput(merchant instanceof AbstractVillager,
+        if (offer == null || !AuthoredStockPolicy.isFinite(offer)
+                || !managesCustomMerchantOutput(merchant instanceof AbstractVillager,
                 net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(offer.getResult().getItem()))) return;
         if (!AuthoredStockData.get(level).recordPurchase(offer)) {
             throw new IllegalStateException("Completed custom merchant trade without finite stock: " + offer);

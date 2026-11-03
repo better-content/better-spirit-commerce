@@ -8,6 +8,12 @@ displayName="${mod_name}"
 authors="gerald"
 description='''Player-earned Malum spirit commerce and eight themed village professions.'''
 [[dependencies.${mod_id}]]
+modId="better_celestial_events"
+mandatory=false
+versionRange="[0.1.0,)"
+ordering="AFTER"
+side="BOTH"
+[[dependencies.${mod_id}]]
 modId="forge"
 mandatory=true
 versionRange="[${forge_version},)"

@@ -27,9 +27,9 @@ final class AuthoredMerchantStockTest {
         assertFalse(AuthoredMerchantStock.managesCustomMerchantOutput(true, DIAMOND));
     }
 
-    @Test void onlyProvenDailyCatalogueOfferOnPlagueDoctorIsExcluded() {
+    @Test void dailyDoctorListingsDoNotBypassTheSharedCommodityPool() {
         assertTrue(AuthoredMerchantStock.manages(PLAGUE_DOCTOR, DIAMOND));
-        assertFalse(AuthoredMerchantStock.manages(PLAGUE_DOCTOR, DIAMOND, true));
+        assertTrue(AuthoredMerchantStock.manages(PLAGUE_DOCTOR, DIAMOND, true));
         assertTrue(AuthoredMerchantStock.manages(PLAGUE_DOCTOR, DIAMOND, false));
         assertTrue(AuthoredMerchantStock.manages(new ResourceLocation("modded", "custom_villager"), DIAMOND, true));
         assertFalse(AuthoredMerchantStock.manages(new ResourceLocation("minecraft", "villager"),

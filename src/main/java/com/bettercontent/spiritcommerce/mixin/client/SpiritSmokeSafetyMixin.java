@@ -24,7 +24,10 @@ public abstract class SpiritSmokeSafetyMixin {
         betterSpiritCommerce$harmless = level != null && level.hasChunkAt(startPos)
                 && level.getBlockState(startPos).getBlock() instanceof SpiritCampfireBlock;
     }
-    @Inject(method = "updatePoisonEffect", at = @At("HEAD"), cancellable = true, remap = false)
+    // The verified upstream versions each have exactly one exposure-packet sender. Reject
+    // an update retaining both names: cancelling only one could leave spirit smoke harmful.
+    @Inject(method = {"updatePoisonEffect", "updateSmokeInhalation"}, at = @At("HEAD"),
+            cancellable = true, require = 1, allow = 1, remap = false)
     private void betterSpiritCommerce$cosmeticSmoke(CallbackInfo ci) {
         if (betterSpiritCommerce$harmless) ci.cancel();
     }

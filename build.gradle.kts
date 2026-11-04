@@ -161,12 +161,12 @@ require(betterContentFixesJar.isFile) {
     "Missing Better Content provider better-compat-fixes-0.1.9.jar at $betterContentFixesJar; prepare BC_CUSTOM_MOD_JAR_DIR or build better-compat-fixes first"
 }
 val notificationsJar = if (providerDirectory == null) {
-    file("../better-gameplay-notices/build/libs/better-gameplay-notices-1.0.0.jar")
+    file("../better-gameplay-notices/build/libs/better-gameplay-notices-1.0.1.jar")
 } else {
-    file(providerDirectory).resolve("better-gameplay-notices-1.0.0.jar")
+    file(providerDirectory).resolve("better-gameplay-notices-1.0.1.jar")
 }
 require(notificationsJar.isFile) {
-    "Missing Better Content provider better-gameplay-notices-1.0.0.jar at $notificationsJar"
+    "Missing Better Content provider better-gameplay-notices-1.0.1.jar at $notificationsJar"
 }
 // Resolve sibling reobfuscated mods through ForgeGradle so the GameTest dev
 // runtime remaps them into the same names as its Minecraft classes.
@@ -218,7 +218,7 @@ dependencies {
     runtimeOnly(fg.deobf("bettercontent.local.dimensiondrink:better-dimension-fonts:1.0.0"))
     // Flat file dependencies do not carry Forge mod dependencies transitively.
     runtimeOnly(fg.deobf("bettercontent.local.fixes:better-compat-fixes:0.1.9"))
-    runtimeOnly(fg.deobf("bettercontent.local.notifications:better-gameplay-notices:1.0.0"))
+    runtimeOnly(fg.deobf("bettercontent.local.notifications:better-gameplay-notices:1.0.1"))
     runtimeOnly(fg.deobf("curse.maven:kotlin-for-forge-351264:7291067"))
     compileOnly(fg.deobf("curse.maven:hyle-609850:7736352"))
     compileOnly(fg.deobf("curse.maven:thirst-was-taken-679270:6660408"))

@@ -5,6 +5,8 @@ import com.bettercontent.spiritcommerce.api.RenewableAcquisitionPolicy;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -30,7 +32,26 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 /** Loaded-resident needs and visible resource gathering. */
 public final class ResidentService {
     private static final int RADIUS = 12;
+    private static final int FAILED_ROUTE_RETRY_TICKS = 600;
+    // Transient navigation state only: never change or migrate resident/world save data.
+    private static final Map<PathfinderMob, FailedRoute> FAILED_ROUTES = new WeakHashMap<>();
     private ResidentService() {}
+
+    record FailedRoute(BlockPos target, int retryAfterTick) {
+        boolean blocks(BlockPos candidate, int tickCount) {
+            return target.equals(candidate) && tickCount < retryAfterTick;
+        }
+    }
+
+    private static boolean navigate(PathfinderMob mob, BlockPos target, double speed) {
+        if (!mob.getNavigation().isDone()) return false;
+        FailedRoute failed = FAILED_ROUTES.get(mob);
+        if (failed != null && failed.blocks(target, mob.tickCount)) return false;
+        boolean started = mob.getNavigation().moveTo(target.getX() + .5, target.getY(), target.getZ() + .5, speed);
+        if (started) FAILED_ROUTES.remove(mob);
+        else FAILED_ROUTES.put(mob, new FailedRoute(target.immutable(), mob.tickCount + FAILED_ROUTE_RETRY_TICKS));
+        return started;
+    }
 
     @SubscribeEvent
     public static void joined(EntityJoinLevelEvent event) {
@@ -79,7 +100,8 @@ public final class ResidentService {
                 ResidentExchange.settle(level, entity);
             if (entity instanceof PathfinderMob mob) {
                 seekShelter(level, mob, state);
-                gather(level, mob, state);
+                // Leave villagers' nighttime bed/POI navigation to their native brain.
+                if (gatherNavigationAllowed(mob instanceof Villager, level.isDay())) gather(level, mob, state);
             }
         }
     }
@@ -137,8 +159,7 @@ public final class ResidentService {
         if (!mob.getNavigation().isDone()) return;
         BlockPos worksite = ResidentRules.worksite(mob);
         if (mob.blockPosition().distSqr(worksite) > 18 * 18) {
-            mob.getNavigation().moveTo(worksite.getX() + .5, worksite.getY(), worksite.getZ() + .5, .6);
-            state.setDoing("Returning to the village");
+            if (navigate(mob, worksite, .6)) state.setDoing("Returning to the village");
             return;
         }
         if (state.water() < 15 && collectWater(level, mob, state)) return;
@@ -167,8 +188,7 @@ public final class ResidentService {
                 ResidentRules.hasShelter(level, center))); return; }
         BlockPos target = candidates.get(0);
         if (center.distSqr(target) > 6) {
-            mob.getNavigation().moveTo(target.getX() + .5, target.getY(), target.getZ() + .5, .6);
-            state.setDoing("Going to gather resources");
+            if (navigate(mob, target, .6)) state.setDoing("Going to gather resources");
             return;
         }
         BlockState block = level.getBlockState(target);
@@ -191,8 +211,7 @@ public final class ResidentService {
                 center.offset(RADIUS, 0, RADIUS))) {
             if (!level.getFluidState(pos).isSourceOfType(Fluids.WATER)) continue;
             if (center.distSqr(pos) > 8) {
-                mob.getNavigation().moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + .5, .6);
-                state.setDoing("Going to collect water");
+                if (navigate(mob, pos, .6)) state.setDoing("Going to collect water");
                 return true;
             }
             ItemStack filled = ResidentRules.waterBottle(0);
@@ -332,17 +351,26 @@ public final class ResidentService {
         return state.count(wanted) < 8;
     }
 
+    static boolean gatherNavigationAllowed(boolean villager, boolean day) {
+        return !villager || day;
+    }
+
+    static boolean shelterNavigationAllowed(boolean villager, boolean navigationDone,
+                                            boolean day, boolean needsRest) {
+        // Villagers already choose beds through their native POI brain. Do not compete with it.
+        return !villager && navigationDone && !day && needsRest;
+    }
+
     private static void seekShelter(ServerLevel level, PathfinderMob mob, ResidentState state) {
-        if (state.rest() >= 14 || ResidentRules.hasShelter(level, mob.blockPosition())) return;
-        if (level.isDay()) return;
+        if (!shelterNavigationAllowed(mob instanceof Villager, mob.getNavigation().isDone(),
+                level.isDay(), state.rest() < 14) || ResidentRules.hasShelter(level, mob.blockPosition())) return;
         BlockPos worksite = ResidentRules.worksite(mob);
         for (BlockPos p : BlockPos.betweenClosed(worksite.offset(-RADIUS, -3, -RADIUS),
                 worksite.offset(RADIUS, 3, RADIUS))) {
             BlockState block = level.getBlockState(p);
             if (!(block.getBlock() instanceof net.minecraft.world.level.block.BedBlock)
                     && !block.getBlock().getDescriptionId().contains("rat_hole")) continue;
-            mob.getNavigation().moveTo(p.getX() + .5, p.getY(), p.getZ() + .5, .55);
-            state.setDoing("Seeking shelter");
+            if (navigate(mob, p, .55)) state.setDoing("Seeking shelter");
             return;
         }
     }

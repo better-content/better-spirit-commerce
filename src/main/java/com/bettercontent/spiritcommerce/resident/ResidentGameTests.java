@@ -12,11 +12,29 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.state.properties.BedPart;
+import net.minecraft.world.entity.ai.village.poi.PoiTypes;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 @PrefixGameTestTemplate(false)
 public final class ResidentGameTests {
     private ResidentGameTests() {}
+
+    @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty")
+    public static void workshopBedProvidesHomePoi(GameTestHelper helper) {
+        BlockPos foot = new BlockPos(2, 2, 1);
+        BlockPos head = foot.south();
+        helper.setBlock(foot.below(), Blocks.STONE);
+        helper.setBlock(head.below(), Blocks.STONE);
+        SettlementGeneration.placeWorkshopBed(helper.getLevel(), helper.absolutePos(foot));
+        helper.assertTrue(helper.getBlockState(foot).getValue(BedBlock.PART) == BedPart.FOOT
+                        && helper.getBlockState(head).getValue(BedBlock.PART) == BedPart.HEAD
+                        && helper.getLevel().getPoiManager().existsAtPosition(PoiTypes.HOME, helper.absolutePos(head))
+                        && !helper.getLevel().getPoiManager().existsAtPosition(PoiTypes.HOME, helper.absolutePos(foot)),
+                "Workshop bed must have a matching head with a native HOME POI");
+        helper.succeed();
+    }
 
     @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty")
     public static void stockedBarterConservesGoods(GameTestHelper helper) {

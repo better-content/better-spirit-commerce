@@ -2,6 +2,7 @@ package com.bettercontent.spiritcommerce.resident;
 
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CropBlock;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -113,8 +115,15 @@ public final class SettlementGeneration {
         station(level, ox + 2, y + 1, oz + 6, block("farmersdelight:cooking_pot"));
         station(level, ox + 2, y, oz + 7, block("tconstruct:part_builder"));
         station(level, ox + 3, y, oz + 7, block("tconstruct:tinker_station"));
-        station(level, ox + 4, y, oz + 1, Blocks.WHITE_BED);
+        placeWorkshopBed(level, new BlockPos(ox + 4, y, oz + 1));
         farm(level, ox + 6, y, oz + 5);
+    }
+
+    static void placeWorkshopBed(ServerLevel level, BlockPos foot) {
+        // Worldgen bypasses BedItem.place; setPlacedBy creates the head and its HOME POI.
+        var state = Blocks.WHITE_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.SOUTH);
+        level.setBlockAndUpdate(foot, state);
+        Blocks.WHITE_BED.setPlacedBy(level, foot, state, null, ItemStack.EMPTY);
     }
 
     private static void generateRats(ServerLevel level, ChunkPos chunk) {

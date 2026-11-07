@@ -149,13 +149,14 @@ public final class SpiritAcquisition {
             if (online.getInventory().items.stream().anyMatch(stack -> deliveryId.equals(receipt(stack)))) return true;
             if (online.getInventory().offhand.stream().anyMatch(stack -> deliveryId.equals(receipt(stack)))) return true;
         }
+        // A world-border-sized AABB makes EntitySectionStorage scan millions of empty
+        // section columns at the default border, stalling the server on each delivery.
+        // The receipt can only be on an entity that is currently loaded and visible.
         for (var level : player.server.getAllLevels()) {
-            if (level.getEntitiesOfClass(SpiritItemEntity.class,
-                    new net.minecraft.world.phys.AABB(level.getWorldBorder().getMinX(), level.getMinBuildHeight(),
-                            level.getWorldBorder().getMinZ(), level.getWorldBorder().getMaxX(), level.getMaxBuildHeight(),
-                            level.getWorldBorder().getMaxZ())).stream()
-                    .map(SpiritItemEntity::getItem)
-                    .anyMatch(stack -> deliveryId.equals(receipt(stack)))) return true;
+            for (Entity entity : level.getAllEntities()) {
+                if (entity instanceof SpiritItemEntity spirit
+                        && deliveryId.equals(receipt(spirit.getItem()))) return true;
+            }
         }
         return false;
     }

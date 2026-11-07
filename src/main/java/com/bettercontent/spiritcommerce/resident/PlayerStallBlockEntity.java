@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -181,6 +182,8 @@ public final class PlayerStallBlockEntity extends BlockEntity {
                     || !ResidentRules.isResident(buyer) || now - stall.visitStarted > 200) {
                 stall.release(now); return;
             }
+            // Native villager bed/POI navigation owns the night; a stall must not pull it away.
+            if (buyer instanceof Villager && !level.isDay()) { stall.release(now); return; }
             BlockPos front = pos.relative(state.getValue(PlayerStallBlock.FACING));
             if (buyer.blockPosition().distSqr(front) <= 4) {
                 if (stall.selectedOffer >= 0 && stall.selectedOffer < OFFERS)
@@ -188,8 +191,10 @@ public final class PlayerStallBlockEntity extends BlockEntity {
                 stall.release(now);
                 return;
             }
-            if (now % 20 == 0) {
-                buyer.getNavigation().moveTo(front.getX() + .5, front.getY(), front.getZ() + .5, .7);
+            if (now % 20 == 0 && buyer.getNavigation().isDone()) {
+                if (!buyer.getNavigation().moveTo(front.getX() + .5, front.getY(), front.getZ() + .5, .7)) {
+                    stall.release(now); return;
+                }
                 ResidentState.of(buyer).setDoing("Going to the player stall");
             }
             return;
@@ -198,7 +203,8 @@ public final class PlayerStallBlockEntity extends BlockEntity {
         stall.nextScan = now + 100;
         List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class,
                 new AABB(pos).inflate(24, 8, 24), entity -> entity.isAlive()
-                        && entity instanceof PathfinderMob && ResidentRules.isResident(entity));
+                        && entity instanceof PathfinderMob && ResidentRules.isResident(entity)
+                        && (!(entity instanceof Villager) || level.isDay()));
         nearby.sort(java.util.Comparator.comparingDouble(e -> e.blockPosition().distSqr(pos)));
         if (nearby.size() > 16) nearby = nearby.subList(0, 16);
         for (LivingEntity buyer : nearby) for (int i = 0; i < OFFERS; i++) {

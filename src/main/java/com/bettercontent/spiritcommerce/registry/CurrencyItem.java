@@ -17,7 +17,7 @@ final class CurrencyItem extends SpiritShardItem {
     }
     @Override public void appendHoverText(ItemStack stack, net.minecraft.world.level.Level level,
                                            List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
-        if (identity != CurrencyIdentity.TEMPO) super.appendHoverText(stack, level, tooltip, flag);
+        super.appendHoverText(stack, level, tooltip, flag);
         tooltip.add(Component.translatable("tooltip.better_spirit_commerce." + identity.id()));
     }
 }

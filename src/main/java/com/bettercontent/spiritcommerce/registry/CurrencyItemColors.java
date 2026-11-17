@@ -2,7 +2,6 @@ package com.bettercontent.spiritcommerce.registry;
 
 import com.bettercontent.spiritcommerce.BetterSpiritCommerce;
 import com.bettercontent.spiritcommerce.spirit.CurrencyIdentity;
-import com.bettercontent.spiritcommerce.spirit.EconomySpiritTypes;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -15,7 +14,13 @@ public final class CurrencyItemColors {
     @SubscribeEvent
     public static void register(RegisterColorHandlersEvent.Item event) {
         for (CurrencyIdentity identity : CurrencyIdentity.values()) {
-            int color = EconomySpiritTypes.type(identity).getItemColor().getRGB() & 0xFFFFFF;
+            int color = switch (identity) {
+                case POWER -> 0xFF4055;
+                case MOTION -> 0xE0B01F;
+                case ENDURANCE -> 0x52606A;
+                case RENEWAL -> 0x6CCAF0;
+                case CONTROL -> 0x8E5BB7;
+            };
             event.register((stack, tintIndex) -> color, CurrencyItems.item(identity).get());
         }
     }

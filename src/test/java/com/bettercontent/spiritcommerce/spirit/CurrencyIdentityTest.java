@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 final class CurrencyIdentityTest {
     @Test
-    void legacyNativeSpiritsMapOnceWhileTempoHasNoNativeAlias() {
+    void sevenInternalNativeNamesConvergeToFiveRealReagents() {
         assertEquals(CurrencyIdentity.RENEWAL, CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation("malum:sacred_spirit")));
         assertEquals(CurrencyIdentity.CONTROL, CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation("malum:wicked_spirit")));
         assertEquals(CurrencyIdentity.WORK, CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation("malum:arcane_spirit")));
@@ -16,13 +16,18 @@ final class CurrencyIdentityTest {
         assertEquals(CurrencyIdentity.ENDURANCE, CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation("malum:aqueous_spirit")));
         assertEquals(CurrencyIdentity.ROBUSTNESS, CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation("malum:earthen_spirit")));
         assertEquals(CurrencyIdentity.IMPACT, CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation("malum:infernal_spirit")));
-        assertNull(CurrencyIdentity.TEMPO.legacyNativeSpirit());
+        assertEquals(5, CurrencyIdentity.values().length);
+        assertEquals(CurrencyIdentity.POWER, CurrencyIdentity.fromNativeName("arcane"));
+        assertEquals(CurrencyIdentity.POWER, CurrencyIdentity.fromNativeName("infernal"));
+        assertEquals(CurrencyIdentity.ENDURANCE, CurrencyIdentity.fromNativeName("aqueous"));
+        assertEquals(CurrencyIdentity.ENDURANCE, CurrencyIdentity.fromNativeName("earthen"));
+        assertNull(CurrencyIdentity.fromNativeName("tempo"));
         assertNull(CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation("malum:eldritch_spirit")));
         assertNull(CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation("malum:umbral_spirit")));
     }
 
     @Test
-    void onlyTheEightEconomyItemIdsQualifyForPouchCompatibility() {
+    void onlyFiveEconomyItemsQualifyForPouchAndCommerce() {
         for (CurrencyIdentity identity : CurrencyIdentity.values()) {
             assertEquals(identity, CurrencyIdentity.fromItemId(identity.itemId()));
         }

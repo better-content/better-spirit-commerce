@@ -10,14 +10,19 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 final class WanderingPoolTest {
-    @Test void fullAuthoredPoolHasThirtyFiveGoodsAndOneMatchingFireForEveryIdentity() {
+    @Test void unchangedSourceGoodsProjectOntoFiveThemesAndOneMatchingFireEach() {
         assertEquals(288, WanderingPool.rowCount());
         var all = new ArrayList<Row>();
         for (SpiritKind kind : SpiritKind.values()) {
             var rows = WanderingPool.rows(kind);
             all.addAll(rows);
-            assertEquals(36, rows.size());
-            assertEquals(4, rows.stream().filter(row -> row.bucket() == Bucket.STAPLE).count());
+            int sources = switch (kind) {
+                case POWER, MOTION, ENDURANCE -> 2;
+                case RENEWAL, CONTROL -> 1;
+            };
+            assertEquals(36 * sources - (sources - 1), rows.size());
+            assertEquals(4 * sources, rows.stream().filter(row -> row.bucket() == Bucket.STAPLE).count());
+            assertTrue(rows.stream().allMatch(row -> row.spirit().equals(kind.id())));
             var fire = rows.stream().filter(row -> row.bucket() == Bucket.CAMPFIRE).findFirst().orElseThrow();
             assertEquals("better_spirit_commerce:" + kind.id() + "_campfire", fire.result().id());
             assertEquals(1, fire.result().count());
@@ -25,8 +30,8 @@ final class WanderingPoolTest {
             assertEquals(16, fire.maxUses());
             assertTrue(rows.stream().allMatch(row -> row.cost() >= 1 && row.cost() <= 64));
         }
-        assertEquals(288, all.stream().map(row -> row.result().id()).distinct().count());
-        assertEquals(204, all.stream().filter(row -> !row.result().id().startsWith("minecraft:")).count());
+        assertEquals(285, all.stream().map(row -> row.result().id()).distinct().count());
+        assertEquals(201, all.stream().filter(row -> !row.result().id().startsWith("minecraft:")).count());
         assertTrue(all.stream().anyMatch(row -> row.cost() == 64));
         assertTrue(all.stream().noneMatch(row -> row.result().id().startsWith("service:")));
         Set<String> excluded = Set.of("minecraft:elytra", "rehooked:wood_hook", "minecraft:potion",
@@ -45,8 +50,7 @@ final class WanderingPoolTest {
     }
 
     private WanderingPool.Document document() {
-        var rows = java.util.Arrays.stream(SpiritKind.values()).flatMap(kind -> WanderingPool.rows(kind).stream()).toList();
-        return new WanderingPool.Document(WanderingPool.SCHEMA, rows, WanderingPool.commodityStocks());
+        return WanderingPool.sourceDocument(); // validate exact eight unchanged stock templates, not a projected subset
     }
 
     @Test void rejectsDuplicateRowIdsOutputsInvalidPricesAndMissingFiniteStock() {

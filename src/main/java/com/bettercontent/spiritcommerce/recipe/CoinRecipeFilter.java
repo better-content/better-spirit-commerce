@@ -25,16 +25,25 @@ public final class CoinRecipeFilter {
         Map<ResourceLocation, JsonElement> filtered = new LinkedHashMap<>();
         recipes.forEach((id, json) -> {
             if (RETIRED_RECIPES.contains(id)) return;
-            // Refinement is deliberately one-way: authored currency becomes native Malum spirit.
+            // Eight old economy->native identity adapters are obsolete. Rewriting
+            // them would create self-to-self focusing recipes that waste durability.
             if ("better_spirit_commerce".equals(id.getNamespace())
-                    && id.getPath().startsWith("spirit_refinement/")) {
-                filtered.put(id, json);
-                return;
-            }
-            JsonElement replacement = replaceOrdinarySpirits(json);
+                    && id.getPath().startsWith("spirit_refinement/")) return;
+            JsonElement replacement = canonicalizeSerialized(json);
             if (!hasCoinOutput(replacement)) filtered.put(id, replacement);
         });
         return filtered;
+    }
+
+    /** Idempotent final-JSON boundary shared by vanilla reload and KubeJS post-script
+     * serialization. KubeJS may add ordinary Malum items to any recipe serializer.
+     */
+    public static JsonElement canonicalizeSerialized(JsonElement json) {
+        return mergeSpiritRequirements(replaceOrdinarySpirits(json));
+    }
+
+    public static JsonObject canonicalizeSerialized(JsonObject json) {
+        return canonicalizeSerialized((JsonElement) json).getAsJsonObject();
     }
 
     static boolean hasCoinOutput(JsonElement recipe) {
@@ -61,6 +70,64 @@ public final class CoinRecipeFilter {
     }
 
     private static ResourceLocation id(String value) { return new ResourceLocation(value); }
+
+    /** Merge convergent Malum requirements before native deserialization, including an
+     * inner recipe inside a Forge conditional wrapper. Never touch an unrelated mod's
+     * generic `spirits` field. The separate raw-item walk retains rune counts 16/32.
+     */
+    static JsonElement mergeSpiritRequirements(JsonElement element) {
+        if (element == null || element.isJsonNull() || element.isJsonPrimitive()) return element;
+        if (element.isJsonArray()) {
+            JsonArray result = new JsonArray();
+            element.getAsJsonArray().forEach(child -> result.add(mergeSpiritRequirements(child)));
+            return result;
+        }
+        JsonObject object = new JsonObject();
+        element.getAsJsonObject().entrySet().forEach(entry ->
+                object.add(entry.getKey(), mergeSpiritRequirements(entry.getValue())));
+        if (!isNativeSpiritRecipe(object) || !object.has("spirits") || !object.get("spirits").isJsonArray()) {
+            return object;
+        }
+        JsonArray inputs = object.getAsJsonArray("spirits");
+        Map<String, JsonObject> totals = new LinkedHashMap<>();
+        JsonArray result = new JsonArray();
+        for (JsonElement input : inputs) {
+            if (!input.isJsonObject() || !input.getAsJsonObject().has("type")
+                    || !input.getAsJsonObject().has("count")) {
+                result.add(input.deepCopy());
+                continue;
+            }
+            JsonObject spirit = input.getAsJsonObject();
+            String nativeName = spirit.get("type").getAsString();
+            String grouped = switch (nativeName) {
+                case "infernal", "arcane" -> "infernal";
+                case "aerial" -> "aerial";
+                case "aqueous", "earthen" -> "aqueous";
+                case "sacred" -> "sacred";
+                case "wicked" -> "wicked";
+                default -> nativeName; // Eldritch/Umbral retain specialist identity.
+            };
+            JsonObject earlier = totals.get(grouped);
+            if (earlier == null) {
+                JsonObject canonical = spirit.deepCopy();
+                canonical.addProperty("type", grouped);
+                totals.put(grouped, canonical);
+                result.add(canonical);
+            } else {
+                earlier.addProperty("count", Math.addExact(earlier.get("count").getAsInt(), spirit.get("count").getAsInt()));
+            }
+        }
+        object.add("spirits", result);
+        return object;
+    }
+
+    private static boolean isNativeSpiritRecipe(JsonObject object) {
+        if (!object.has("type") || !object.get("type").isJsonPrimitive()) return false;
+        return switch (object.get("type").getAsString()) {
+            case "malum:spirit_infusion", "malum:spirit_repair", "malum:spirit_focusing" -> true;
+            default -> false;
+        };
+    }
 
     /** Changes exact ordinary Malum item IDs in loaded recipes, including third-party recipes. */
     static JsonElement replaceOrdinarySpirits(JsonElement element) {

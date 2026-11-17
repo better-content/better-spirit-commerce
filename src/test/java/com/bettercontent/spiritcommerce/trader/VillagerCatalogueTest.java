@@ -29,8 +29,8 @@ final class VillagerCatalogueTest {
         assertEquals(List.of(sentinel), trades.get(1));
     }
 
-    @Test void authoredReplacementReplacesListingsForAllEightEconomyProfessions() {
-        assertEquals(8, SpiritKind.values().length);
+    @Test void authoredReplacementKeepsAllGoodsForFiveMergedPaymentProfessions() {
+        assertEquals(5, SpiritKind.values().length);
         for (SpiritKind kind : SpiritKind.values()) {
             Map<Integer, List<VillagerTrades.ItemListing>> trades = new HashMap<>();
             VillagerTrades.ItemListing sentinel = (entity, random) -> null;
@@ -39,7 +39,11 @@ final class VillagerCatalogueTest {
             assertTrue(VillagerCatalogue.replaceListings(kind, trades), kind.id());
 
             assertFalse(trades.values().stream().anyMatch(listings -> listings.contains(sentinel)), kind.id());
-            assertEquals(36, trades.values().stream().mapToInt(List::size).sum(), kind.id());
+            int sources = switch (kind) {
+                case POWER, MOTION, ENDURANCE -> 2;
+                case RENEWAL, CONTROL -> 1;
+            };
+            assertEquals(35 * sources + 1, trades.values().stream().mapToInt(List::size).sum(), kind.id());
         }
     }
 }

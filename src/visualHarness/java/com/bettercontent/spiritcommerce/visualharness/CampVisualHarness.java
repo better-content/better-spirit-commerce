@@ -20,8 +20,6 @@ import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.NetworkDirection;
@@ -46,13 +44,11 @@ public final class CampVisualHarness {
                 .consumerMainThread(CapturePacket::handle).add();
         MinecraftForge.EVENT_BUS.register(this);
         MarketVisualHarness.register();
-        ResidentVisualHarness.register();
     }
 
     @SubscribeEvent
     public void registerCommands(final RegisterCommandsEvent event) {
         MarketVisualHarness.registerCommands(event);
-        ResidentVisualHarness.registerCommands(event);
         event.getDispatcher().register(Commands.literal("campvisual").requires(source -> source.hasPermission(2))
                 .then(Commands.literal("prepare").then(Commands.argument("player", EntityArgument.player())
                         .executes(context -> prepare(EntityArgument.getPlayer(context, "player")))))
@@ -68,17 +64,6 @@ public final class CampVisualHarness {
                         .then(Commands.argument("name", StringArgumentType.word()).executes(context -> capture(
                                 EntityArgument.getPlayer(context, "player"),
                                 StringArgumentType.getString(context, "name")))))));
-    }
-
-    @SubscribeEvent
-    public void residentVisualLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) ResidentVisualHarness.autoCapture(player);
-    }
-
-    @SubscribeEvent
-    public void residentVisualTick(TickEvent.ServerTickEvent event) {
-        // A prepared camp review owns the camera; resident auto-scenes must not replace it.
-        if (origin == null) ResidentVisualHarness.autoTick(event);
     }
 
     private static int prepare(final ServerPlayer player) {

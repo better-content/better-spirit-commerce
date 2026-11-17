@@ -7,7 +7,6 @@ import com.bettercontent.spiritcommerce.trader.VillageStarterOffer;
 import com.bettercontent.spiritcommerce.trader.WanderingTraderVisits;
 import com.bettercontent.spiritcommerce.trader.WanderingTraderCatalogue;
 import com.bettercontent.spiritcommerce.trader.VillagerCatalogue;
-import com.bettercontent.spiritcommerce.resident.ResidentRules;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.entity.npc.Villager;
@@ -23,10 +22,6 @@ abstract class AbstractVillagerMixin {
     private void betterContentEconomy$applyTradePolicy(final CallbackInfoReturnable<MerchantOffers> callback) {
         AbstractVillager merchant = (AbstractVillager) (Object) this;
         MerchantOffers offers = callback.getReturnValue();
-        if (merchant instanceof Villager && ResidentRules.isResident(merchant)) {
-            offers.clear();
-            return;
-        }
         MerchantCurrencyPolicy.normalize(offers);
         if (PlagueDoctorCatalogue.isPlagueDoctor(merchant)) {
             PlagueDoctorCatalogue.ensureOffers(merchant, offers);
@@ -40,7 +35,6 @@ abstract class AbstractVillagerMixin {
             VillagerCatalogue.ensureFontOfferIfAvailable(villager, offers);
         }
         // Final server-side NPC filter AFTER custom daily/themed/font/third-party appends.
-        // Resident finite-stock barter does not use MerchantOffers and is deliberately untouched.
         offers.removeIf(offer -> !RenewableAcquisitionPolicy.allowsMerchant(merchant,offer.getResult()));
     }
 }

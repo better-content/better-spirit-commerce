@@ -14,8 +14,9 @@ final class AuthoredTradeSignalsMappingTest {
     }
 
     @Test void everyLegacyNativeCurrencyMaps() {
-        for (CurrencyIdentity identity : CurrencyIdentity.values()) {
-            if (identity.legacyNativeSpirit() != null) assertSame(identity, AuthoredTradeSignals.mappedCurrency(identity.legacyNativeSpirit()));
+        for (String name : java.util.List.of("infernal", "arcane", "aerial", "aqueous", "earthen", "sacred", "wicked")) {
+            CurrencyIdentity identity = CurrencyIdentity.fromNativeName(name);
+            assertSame(identity, AuthoredTradeSignals.mappedCurrency(new ResourceLocation("malum", name + "_spirit")));
         }
     }
 

@@ -17,6 +17,6 @@ abstract class MalumLeavesSpiritMixin {
             target = "Lnet/minecraftforge/registries/RegistryObject;get()Ljava/lang/Object;", remap = false))
     private Object betterContentEconomy$useImpactSpirit(final RegistryObject<?> registry) {
         return registry == ItemRegistry.INFERNAL_SPIRIT
-                ? CurrencyItems.item(CurrencyIdentity.IMPACT).get() : registry.get();
+                ? CurrencyItems.item(CurrencyIdentity.POWER).get() : registry.get();
     }
 }

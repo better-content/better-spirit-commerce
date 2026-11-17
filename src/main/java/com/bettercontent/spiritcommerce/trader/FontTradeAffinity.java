@@ -9,12 +9,11 @@ final class FontTradeAffinity {
 
     static Set<String> destinations(final SpiritKind kind) {
         return switch (kind) {
-            case SACRED -> Set.of("aether", "bumblezone");
-            case WICKED, INFERNAL -> Set.of("nether");
-            case ARCANE, AQUEOUS -> Set.of("ratlantis");
-            case AERIAL -> Set.of("aether");
-            case EARTHEN -> Set.of("bumblezone", "ratlantis");
-            case TEMPO -> Set.of("bumblezone");
+            case POWER -> Set.of("nether", "ratlantis"); // previous Infernal + Arcane
+            case MOTION -> Set.of("aether", "bumblezone"); // previous Aerial + Tempo
+            case ENDURANCE -> Set.of("ratlantis", "bumblezone"); // previous Aqueous + Earthen
+            case RENEWAL -> Set.of("aether", "bumblezone"); // previous Sacred
+            case CONTROL -> Set.of("nether"); // previous Wicked
         };
     }
 }

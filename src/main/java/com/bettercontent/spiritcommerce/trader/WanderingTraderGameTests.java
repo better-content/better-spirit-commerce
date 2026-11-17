@@ -5,10 +5,15 @@ import com.bettercontent.spiritcommerce.mixin.FloatingEntityAccessor;
 import com.bettercontent.spiritcommerce.registry.SpiritProfessions;
 import com.bettercontent.spiritcommerce.registry.CurrencyItems;
 import com.bettercontent.spiritcommerce.spirit.CurrencyIdentity;
-import com.bettercontent.spiritcommerce.spirit.SpiritAcquisition;
-import com.bettercontent.spiritcommerce.spirit.SpiritCreditData;
+import com.sammy.malum.core.handlers.SpiritHarvestHandler;
 import com.mojang.authlib.GameProfile;
 import com.sammy.malum.common.entity.spirit.SpiritItemEntity;
+import com.sammy.malum.common.block.curiosities.ritual_plinth.RitualPlinthBlockEntity;
+import com.sammy.malum.common.item.spirit.RitualShardItem;
+import com.sammy.malum.core.systems.ritual.MalumRitualTier;
+import com.sammy.malum.core.systems.ritual.MalumRitualType;
+import com.sammy.malum.registry.common.RitualRegistry;
+import com.sammy.malum.registry.common.block.BlockRegistry;
 import com.sammy.malum.core.systems.recipe.SpiritWithCount;
 import com.sammy.malum.registry.common.SpiritTypeRegistry;
 import com.sammy.malum.registry.common.item.ItemRegistry;
@@ -24,6 +29,7 @@ import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.npc.WanderingTrader;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.item.trading.MerchantOffer;
@@ -68,22 +74,109 @@ public final class WanderingTraderGameTests {
     @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty")
     public static void malumRecipesUseEconomySpirits(final GameTestHelper helper) {
         var arcane = new SpiritWithCount(SpiritTypeRegistry.ARCANE_SPIRIT, 2);
-        helper.assertTrue(arcane.getItem() == CurrencyItems.item(com.bettercontent.spiritcommerce.spirit.CurrencyIdentity.WORK).get(),
-                "Arcane-aspect recipes must display and require Work spirits");
-        helper.assertTrue(arcane.matches(new ItemStack(CurrencyItems.item(com.bettercontent.spiritcommerce.spirit.CurrencyIdentity.WORK).get(), 2)),
-                "Work spirits must satisfy Malum's Arcane requirement");
+        helper.assertTrue(arcane.getItem() == CurrencyItems.item(com.bettercontent.spiritcommerce.spirit.CurrencyIdentity.POWER).get(),
+                "Arcane-aspect native type resolves to the real Power reagent");
+        helper.assertTrue(new SpiritWithCount(SpiritTypeRegistry.INFERNAL_SPIRIT, 2).getItem() == arcane.getItem(),
+                "Infernal and Arcane resolve to the same Power reagent, not two required currencies");
+        helper.assertTrue(arcane.matches(new ItemStack(CurrencyItems.item(com.bettercontent.spiritcommerce.spirit.CurrencyIdentity.POWER).get(), 2)),
+                "Power spirit satisfies Malum's Arcane requirement");
         helper.assertTrue(!arcane.matches(new ItemStack(ItemRegistry.ARCANE_SPIRIT.get(), 2)),
                 "Ordinary native Malum spirits must no longer satisfy the active recipe");
         helper.assertTrue(new SpiritWithCount(SpiritTypeRegistry.ELDRITCH_SPIRIT, 1).getItem()
                         == ItemRegistry.ELDRITCH_SPIRIT.get(), "Eldritch must stay native Malum");
+        helper.assertTrue(new SpiritWithCount(SpiritTypeRegistry.UMBRAL_SPIRIT, 1).getItem()
+                        == ItemRegistry.UMBRAL_SPIRIT.get(), "Umbral must stay native Malum");
+        var physical = SpiritTypeRegistry.SPIRITS.values().stream()
+                .map(type -> type.spiritShard.get()).collect(java.util.stream.Collectors.toSet());
+        helper.assertTrue(physical.size() == 7,
+                "Nine internal native property/ritual types must yield five core plus two specialist physical reagents");
+        helper.assertTrue(SpiritTypeRegistry.SPIRITS.size() == 9
+                && SpiritTypeRegistry.SPIRITS.get("arcane") == SpiritTypeRegistry.ARCANE_SPIRIT
+                && SpiritTypeRegistry.SPIRITS.get("earthen") == SpiritTypeRegistry.EARTHEN_SPIRIT,
+                "Do not prune native map entries: ritual lookups and index paths still need original types");
+        var propertyValues = SpiritTypeRegistry.SPIRIT_TYPE_PROPERTY.getPossibleValues();
+        helper.assertTrue(propertyValues.contains("arcane") && propertyValues.contains("earthen")
+                && propertyValues.contains("infernal") && !propertyValues.contains("power")
+                && !propertyValues.contains("endurance"),
+                "Immutable native blockstate property admits old identifiers, not invented core names");
+        helper.assertTrue(SpiritTypeRegistry.getIndexForSpiritType(SpiritTypeRegistry.ARCANE_SPIRIT) >= 0
+                && SpiritTypeRegistry.getIndexForSpiritType(SpiritTypeRegistry.EARTHEN_SPIRIT) >= 0,
+                "Internal native aliases retain stable property/ritual indexes; no new blockstate IDs");
         helper.succeed();
+    }
+
+    @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty")
+    public static void postScriptCanonicalJsonDeserializesAsOneRealNativePowerRequirement(final GameTestHelper helper) {
+        // The pinned KubeJS final hook runs after RecipeJS.serialize() and before
+        // RecipePlatformHelper.fromJson. Give that same post-script object to the
+        // actual native Malum serializer; bulk-map-only tests cannot establish this.
+        var afterScript = com.google.gson.JsonParser.parseString("{\"type\":\"malum:spirit_focusing\","
+                + "\"time\":100,\"durabilityCost\":4,\"input\":{\"item\":\"minecraft:stone\"},"
+                + "\"output\":{\"item\":\"minecraft:diamond\",\"count\":3},"
+                + "\"spirits\":[{\"type\":\"arcane\",\"count\":2},"
+                + "{\"type\":\"infernal\",\"count\":3}]}").getAsJsonObject();
+        var finalJson = com.bettercontent.spiritcommerce.recipe.CoinRecipeFilter.canonicalizeSerialized(afterScript);
+        var recipe = new com.sammy.malum.common.recipe.SpiritFocusingRecipe.Serializer().fromJson(
+                new net.minecraft.resources.ResourceLocation(BetterSpiritCommerce.MOD_ID, "post_script_power"), finalJson);
+        helper.assertTrue(recipe != null && recipe.spirits.size() == 1
+                && recipe.spirits.get(0).type == SpiritTypeRegistry.INFERNAL_SPIRIT
+                && recipe.spirits.get(0).count == 5
+                && recipe.spirits.get(0).getItem() == CurrencyItems.item(CurrencyIdentity.POWER).get(),
+                "Native serializer must receive one real Power reagent costing 2+3, not two separate spirit entries");
+        helper.assertTrue(recipe.output.is(Items.DIAMOND) && recipe.output.getCount() == 3
+                && recipe.time == 100 && recipe.durabilityCost == 4,
+                "Native serializer must preserve exact post-script output and nonspirit costs");
+        helper.succeed();
+    }
+
+    @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty", timeoutTicks = 100)
+    public static void twoNativeRitualsPerCollapsedReagentStillSelectTheirOwnPlinthIdentity(final GameTestHelper helper) {
+        ServerPlayer player = FakePlayerFactory.get(helper.getLevel(),
+                new GameProfile(UUID.nameUUIDFromBytes("ritual-identity-gametest".getBytes()), "ritual-identity"));
+        MalumRitualType arcane = RitualRegistry.RITUAL_OF_MANABOUND_ENHANCEMENT;
+        MalumRitualType infernal = RitualRegistry.RITUAL_OF_CTHONIC_EXCHANGE;
+        MalumRitualType aqueous = RitualRegistry.RITUAL_OF_MARINE_SPOIL;
+        MalumRitualType earthen = RitualRegistry.RITUAL_OF_TERRAN_UNEARTHING;
+        helper.assertTrue(arcane.spirit != infernal.spirit
+                && arcane.spirit.spiritShard.get() == infernal.spirit.spiritShard.get()
+                && arcane.spirit.spiritShard.get() == CurrencyItems.item(CurrencyIdentity.POWER).get(),
+                "Two different native ritual types share a physical Power reagent, not a ritual identifier");
+        helper.assertTrue(aqueous.spirit != earthen.spirit
+                && aqueous.spirit.spiritShard.get() == earthen.spirit.spiritShard.get()
+                && aqueous.spirit.spiritShard.get() == CurrencyItems.item(CurrencyIdentity.ENDURANCE).get(),
+                "Two different native ritual types share a physical Endurance reagent");
+        selectRitual(helper, player, new BlockPos(2, 2, 2), arcane);
+        selectRitual(helper, player, new BlockPos(4, 2, 2), infernal);
+        selectRitual(helper, player, new BlockPos(2, 2, 2), aqueous);
+        selectRitual(helper, player, new BlockPos(4, 2, 2), earthen);
+        helper.succeed();
+    }
+
+    private static void selectRitual(final GameTestHelper helper, final ServerPlayer player,
+                                     final BlockPos position, final MalumRitualType requested) {
+        // Replace the plinth between pairs: selection is from the actual native shard
+        // and native plinth handler, not from a copied NBT tag or a default reagent.
+        helper.setBlock(position, Blocks.AIR);
+        helper.setBlock(position, BlockRegistry.RITUAL_PLINTH.get());
+        var plinth = helper.getLevel().getBlockEntity(helper.absolutePos(position));
+        helper.assertTrue(plinth instanceof RitualPlinthBlockEntity, "Native plinth must exist");
+        RitualPlinthBlockEntity ritualPlinth = (RitualPlinthBlockEntity) plinth;
+        ItemStack shard = new ItemStack(ItemRegistry.RITUAL_SHARD.get());
+        shard.setTag(requested.createShardNBT(MalumRitualTier.DIM));
+        helper.assertTrue(requested.identifier.toString().equals(shard.getTag().getString("stored_ritual"))
+                && RitualShardItem.getRitualType(shard) == requested,
+                "Native resolver must retain the exact stored_ritual identity");
+        player.setItemInHand(InteractionHand.MAIN_HAND, shard);
+        ritualPlinth.onUse(player, InteractionHand.MAIN_HAND);
+        helper.assertTrue(ritualPlinth.ritualType == requested && ritualPlinth.setupComplete,
+                "Native plinth selected the requested ritual by shard NBT rather than collapsed physical reagent");
     }
 
     @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty", timeoutTicks = 100)
     public static void themedIdentityIsStored(final GameTestHelper helper) {
         WanderingTrader trader = helper.spawn(EntityType.WANDERING_TRADER, new BlockPos(2, 2, 2));
         WanderingTraderVisits.applyTheme(trader, WanderingTraderTheme.INFERNAL, true);
-        if (!"infernal".equals(trader.getPersistentData().getString(WanderingTraderVisits.THEME_TAG))) {
+        if (!"power".equals(trader.getPersistentData().getString(WanderingTraderVisits.THEME_TAG))) {
             helper.fail("Expected the spirit theme to persist");
             return;
         }
@@ -105,7 +198,7 @@ public final class WanderingTraderGameTests {
         }
         BlockPos original = BlockPos.of(trader.getPersistentData().getLong(TraderCampService.CAMP_POS_TAG));
         if (!(helper.getLevel().getBlockEntity(original) instanceof TraderCampPostBlockEntity post)
-                || !trader.getUUID().equals(post.traderId()) || !"aqueous".equals(post.themeId())) {
+                || !trader.getUUID().equals(post.traderId()) || !"endurance".equals(post.themeId())) {
             helper.fail("Camp post did not retain the linked trader and theme");
             return;
         }
@@ -201,22 +294,64 @@ public final class WanderingTraderGameTests {
         helper.succeed();
     }
 
-    @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty", timeoutTicks = 100)
-    public static void creditedKillQueuesDurableCreditBeforeRelease(final GameTestHelper helper) {
+    @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty", timeoutTicks = 160)
+    public static void creditedKillReleasesMalumMappedSpiritsAtVictimImmediately(final GameTestHelper helper) {
         ServerPlayer player = FakePlayerFactory.get(helper.getLevel(),
                 new GameProfile(UUID.nameUUIDFromBytes("spirit-economy-gametest".getBytes()), "spirit-economy-test"));
         var zombie = helper.spawn(EntityType.ZOMBIE, new BlockPos(2, 2, 2));
         com.sammy.malum.common.capability.MalumLivingEntityDataCapability.getCapability(zombie)
                 .soulData.exposedSoulDuration = 100.0F;
+        var nativeDrops = SpiritHarvestHandler.getSpawnedSpirits(zombie, player, ItemStack.EMPTY);
+        var expected = new java.util.EnumMap<CurrencyIdentity, Integer>(CurrencyIdentity.class);
+        for (ItemStack stack : nativeDrops) {
+            var id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+            CurrencyIdentity identity = CurrencyIdentity.fromLegacyNativeSpirit(id);
+            if (identity == null) identity = CurrencyIdentity.fromItemId(id);
+            if (identity != null) expected.merge(identity, stack.getCount(), Integer::sum);
+        }
+        helper.assertTrue(!expected.isEmpty(), "Malum must return a mapped zombie spirit for this fixture");
         zombie.hurt(helper.getLevel().damageSources().playerAttack(player), 1000.0F);
-        AABB bounds = zombie.getBoundingBox().inflate(2.0D);
-        helper.succeedWhen(() -> {
-            var spirits = helper.getLevel().getEntitiesOfClass(SpiritItemEntity.class, bounds);
-            var pending = SpiritCreditData.get(helper.getLevel().getServer().overworld())
-                    .ledger(player.getUUID()).pending();
-            helper.assertTrue(!pending.isEmpty(), "Credited hostile kill did not persist pending currency credit");
-            helper.assertTrue(spirits.isEmpty(), "FakePlayer must not receive early physical release");
+        AABB bounds = zombie.getBoundingBox().inflate(3.0D);
+        var spirits = helper.getLevel().getEntitiesOfClass(SpiritItemEntity.class, bounds);
+        var actual = new java.util.EnumMap<CurrencyIdentity, Integer>(CurrencyIdentity.class);
+        for (SpiritItemEntity spirit : spirits) {
+            helper.assertTrue(player.getUUID().equals(spirit.ownerUUID), "Spirit must target the credited player");
+            CurrencyIdentity identity = CurrencyIdentity.fromItemId(ForgeRegistries.ITEMS.getKey(spirit.getItem().getItem()));
+            helper.assertTrue(identity != null, "Ordinary Malum spirit must use its matching commerce item");
+            actual.merge(identity, spirit.getItem().getCount(), Integer::sum);
+        }
+        helper.assertTrue(actual.equals(expected), "Immediate drops must match Malum's mob types and counts: "
+                + actual + " vs " + expected);
+        var initialIds = spirits.stream().map(Entity::getUUID).collect(java.util.stream.Collectors.toSet());
+        helper.runAfterDelay(120, () -> {
+            var later = helper.getLevel().getEntitiesOfClass(SpiritItemEntity.class, bounds.inflate(12.0D)).stream()
+                    .filter(spirit -> player.getUUID().equals(spirit.ownerUUID))
+                    .filter(spirit -> !initialIds.contains(spirit.getUUID())).toList();
+            helper.assertTrue(later.isEmpty(), "A delayed second spirit release appeared after the kill");
+            helper.succeed();
         });
+    }
+
+    @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty")
+    public static void excludedMobsDoNotReleaseSpirits(final GameTestHelper helper) {
+        ServerPlayer player = FakePlayerFactory.get(helper.getLevel(),
+                new GameProfile(UUID.randomUUID(), "excluded-spirit-test"));
+        var spawnerMob = helper.spawn(EntityType.ZOMBIE, new BlockPos(2, 2, 2));
+        var soullessMob = helper.spawn(EntityType.ZOMBIE, new BlockPos(4, 2, 2));
+        var spawnerSoul = com.sammy.malum.common.capability.MalumLivingEntityDataCapability
+                .getCapability(spawnerMob).soulData;
+        spawnerSoul.exposedSoulDuration = 100.0F;
+        spawnerSoul.spawnerSpawned = true;
+        var soullessSoul = com.sammy.malum.common.capability.MalumLivingEntityDataCapability
+                .getCapability(soullessMob).soulData;
+        soullessSoul.exposedSoulDuration = 100.0F;
+        soullessSoul.soulless = true;
+        spawnerMob.hurt(helper.getLevel().damageSources().playerAttack(player), 1000.0F);
+        soullessMob.hurt(helper.getLevel().damageSources().playerAttack(player), 1000.0F);
+        helper.assertTrue(helper.getLevel().getEntitiesOfClass(SpiritItemEntity.class,
+                spawnerMob.getBoundingBox().inflate(5.0D)).isEmpty(),
+                "Spawner-origin and soulless mobs must not release spirits");
+        helper.succeed();
     }
 
     @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty", timeoutTicks = 100)

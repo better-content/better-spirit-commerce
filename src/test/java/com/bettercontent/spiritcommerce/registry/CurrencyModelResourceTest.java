@@ -12,14 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class CurrencyModelResourceTest {
     @Test
-    void everyEconomyCurrencyHasARegisteredItemModelAndTempoHasABlockstate() throws Exception {
+    void eachOfFiveRealReagentsHasAnItemModelAndLegacyStationArtIsPreserved() throws Exception {
         Map<String, String> parents = Map.of(
-                "impact_spirit", "malum:item/infernal_spirit",
-                "tempo_spirit", "malum:item/aerial_spirit",
-                "work_spirit", "malum:item/arcane_spirit",
-                "mobility_spirit", "malum:item/aerial_spirit",
+                "power_spirit", "malum:item/infernal_spirit",
+                "motion_spirit", "malum:item/aerial_spirit",
                 "endurance_spirit", "malum:item/aqueous_spirit",
-                "robustness_spirit", "malum:item/earthen_spirit",
                 "renewal_spirit", "malum:item/sacred_spirit",
                 "control_spirit", "malum:item/wicked_spirit");
         Path models = Path.of("src/main/resources/assets/better_spirit_commerce/models/item");

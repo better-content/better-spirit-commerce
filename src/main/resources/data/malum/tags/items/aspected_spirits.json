@@ -1,14 +1,11 @@
 {
   "replace": true,
   "values": [
+    "better_spirit_commerce:power_spirit",
+    "better_spirit_commerce:motion_spirit",
+    "better_spirit_commerce:endurance_spirit",
     "better_spirit_commerce:renewal_spirit",
     "better_spirit_commerce:control_spirit",
-    "better_spirit_commerce:work_spirit",
-    "better_spirit_commerce:mobility_spirit",
-    "better_spirit_commerce:endurance_spirit",
-    "better_spirit_commerce:robustness_spirit",
-    "better_spirit_commerce:impact_spirit",
-    "better_spirit_commerce:tempo_spirit",
     "malum:eldritch_spirit"
   ]
 }

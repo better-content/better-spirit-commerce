@@ -25,7 +25,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-/** Registry boundary for the eight spirit professions and their distinct job sites. */
+/** Registry boundary for the five spirit-market professions and their job sites. */
 public final class SpiritProfessions {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, BetterSpiritCommerce.MOD_ID);
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, BetterSpiritCommerce.MOD_ID);
@@ -35,14 +35,13 @@ public final class SpiritProfessions {
     private static final Map<SpiritKind, Definition> DEFINITIONS = new EnumMap<>(SpiritKind.class);
 
     static {
-        define(SpiritKind.SACRED, "sacred_reliquary", "sacred_caretaker", "Sacred Caretaker", SoundEvents.VILLAGER_WORK_CLERIC);
-        define(SpiritKind.WICKED, "wicked_effigy", "wicked_hexbinder", "Wicked Hexbinder", SoundEvents.VILLAGER_WORK_WEAPONSMITH);
-        define(SpiritKind.ARCANE, "arcane_scriptorium", "arcane_runescribe", "Arcane Runescribe", SoundEvents.VILLAGER_WORK_LIBRARIAN);
-        define(SpiritKind.AERIAL, "aerial_waypost", "aerial_courier", "Aerial Courier", SoundEvents.VILLAGER_WORK_CARTOGRAPHER);
-        define(SpiritKind.AQUEOUS, "aqueous_font", "aqueous_tidekeeper", "Aqueous Tidekeeper", SoundEvents.VILLAGER_WORK_FISHERMAN);
-        define(SpiritKind.EARTHEN, "earthen_workbench", "earthen_stonewarden", "Earthen Stonewarden", SoundEvents.VILLAGER_WORK_MASON);
-        define(SpiritKind.INFERNAL, "infernal_kiln", "infernal_stoker", "Infernal Stoker", SoundEvents.VILLAGER_WORK_ARMORER);
-        define(SpiritKind.TEMPO, "tempo_metronome", "tempo_clocksmith", "Tempo Clocksmith", SoundEvents.VILLAGER_WORK_TOOLSMITH);
+        // Reuse one existing registry/job-site ID per merged market; do not erase
+        // any placed job-site data or invent eight new stock/currency definitions.
+        define(SpiritKind.POWER, "infernal_kiln", "infernal_stoker", "Power Stoker", SoundEvents.VILLAGER_WORK_ARMORER);
+        define(SpiritKind.MOTION, "aerial_waypost", "aerial_courier", "Motion Courier", SoundEvents.VILLAGER_WORK_CARTOGRAPHER);
+        define(SpiritKind.ENDURANCE, "aqueous_font", "aqueous_tidekeeper", "Endurance Keeper", SoundEvents.VILLAGER_WORK_FISHERMAN);
+        define(SpiritKind.RENEWAL, "sacred_reliquary", "sacred_caretaker", "Renewal Caretaker", SoundEvents.VILLAGER_WORK_CLERIC);
+        define(SpiritKind.CONTROL, "wicked_effigy", "wicked_hexbinder", "Control Binder", SoundEvents.VILLAGER_WORK_WEAPONSMITH);
     }
 
     private SpiritProfessions() {}

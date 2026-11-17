@@ -174,7 +174,7 @@ public final class WanderingTraderCatalogue {
             WanderingTraderTheme theme = entity instanceof WanderingTrader trader
                     ? WanderingTraderTheme.fromId(trader.getPersistentData().getString(WanderingTraderVisits.THEME_TAG)) : null;
             if (theme == null && entity != null) theme = WanderingTraderTheme.forUuid(entity.getUUID());
-            if (theme == null) theme = WanderingTraderTheme.SACRED;
+            if (theme == null) theme = WanderingTraderTheme.RENEWAL;
             Item payment = CurrencyItems.item(theme.currencyIdentity()).get();
             return payment == null ? null : new MerchantOffer(new ItemStack(payment),
                     new ItemStack(Items.BREAD), 1, 0, 0.0F);

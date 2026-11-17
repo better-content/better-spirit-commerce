@@ -16,14 +16,14 @@ final class ObservationalSpiritExportTest {
     @Test void exportReportsCompletedPhysicalReleases() {
         String json = ObservationalSpiritExport.json(true, 2,
                 Map.of(CurrencyIdentity.IMPACT, 4, CurrencyIdentity.TEMPO, 3), List.of());
-        assertTrue(json.contains("\"released\":{\"impact\":4,\"tempo\":3}"));
+        assertTrue(json.contains("\"released\":{\"power\":4,\"motion\":3}"));
         assertFalse(json.contains("\"pending\""));
     }
 
     @Test void exchangesContainOnlyExplicitSuccessfulObservations() {
         var exchange = new ObservationalSpiritExport.Exchange(CurrencyIdentity.WORK, 2, "minecraft:villager");
         String csv = ObservationalSpiritExport.csv(true, 2, Map.of(), List.of(exchange));
-        assertTrue(csv.contains("exchange,work,2,minecraft:villager"));
+        assertTrue(csv.contains("exchange,power,2,minecraft:villager"));
         assertFalse(csv.contains("motive"));
         assertFalse(csv.contains("private"));
     }
@@ -33,7 +33,7 @@ final class ObservationalSpiritExportTest {
                 Map.of("minecraft:plains", Map.of(CurrencyIdentity.IMPACT, 4)),
                 Map.of(CurrencyIdentity.WORK, 2));
         var parsed = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
-        assertEquals(4, parsed.getAsJsonObject("regionalMix").getAsJsonObject("minecraft:plains").get("impact").getAsInt());
-        assertEquals(2, parsed.getAsJsonObject("purchases").get("work").getAsInt());
+        assertEquals(4, parsed.getAsJsonObject("regionalMix").getAsJsonObject("minecraft:plains").get("power").getAsInt());
+        assertEquals(2, parsed.getAsJsonObject("purchases").get("power").getAsInt());
     }
 }

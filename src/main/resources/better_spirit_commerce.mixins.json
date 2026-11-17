@@ -4,7 +4,7 @@
   "package": "com.bettercontent.spiritcommerce.mixin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "better_spirit_commerce.refmap.json",
-  "mixins": ["NpcMerchantResultSlotMixin", "NpcMerchantMenuMixin", "NpcMerchantContainerMixin", "AbstractVillagerMixin", "AuthoredMerchantResultSlotMixin", "AuthoredStockSlotMixin", "FloatingEntityAccessor", "FloatingItemDefaultMixin", "MalumLeavesSpiritMixin", "MalumSpiritHarvestMixin", "MalumSpiritTypeAccessor", "MerchantContainerAccessor", "PlagueDoctorMixin", "RecipeManagerMixin", "SpiritItemEntityMixin", "SpiritPouchCurrencySlotMixin", "VillagerProfessionMixin", "WanderingTraderSpawnerMixin"],
-  "client": ["client.SpiritSmokeSafetyMixin", "client.MerchantScreenAccessor", "client.ResidentVillagerArmsMixin", "client.WanderingTraderRendererMixin"],
+  "mixins": ["NpcMerchantResultSlotMixin", "NpcMerchantMenuMixin", "NpcMerchantContainerMixin", "AbstractVillagerMixin", "AuthoredMerchantResultSlotMixin", "AuthoredStockSlotMixin", "FloatingEntityAccessor", "FloatingItemDefaultMixin", "KubeRecipeFinalMixin", "KubeRecipesEventMixin", "MalumLeavesSpiritMixin", "MalumSpiritHarvestMixin", "MalumSpiritTypeAccessor", "MerchantContainerAccessor", "PlagueDoctorMixin", "RecipeManagerMixin", "SpiritItemEntityMixin", "SpiritPouchCurrencySlotMixin", "VillagerProfessionMixin", "WanderingTraderSpawnerMixin"],
+  "client": ["client.SpiritSmokeSafetyMixin", "client.MerchantScreenAccessor", "client.WanderingTraderRendererMixin"],
   "injectors": {"defaultRequire": 1}
 }

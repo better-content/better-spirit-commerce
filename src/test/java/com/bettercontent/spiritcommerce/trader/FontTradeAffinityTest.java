@@ -10,14 +10,11 @@ import org.junit.jupiter.api.Test;
 final class FontTradeAffinityTest {
     @Test void eachSpiritMarketSellsOnlyDestinationsWithMatchingSalience() {
         Map<SpiritKind, Set<String>> expected = Map.of(
-                SpiritKind.SACRED, Set.of("aether", "bumblezone"),
-                SpiritKind.WICKED, Set.of("nether"),
-                SpiritKind.ARCANE, Set.of("ratlantis"),
-                SpiritKind.AERIAL, Set.of("aether"),
-                SpiritKind.AQUEOUS, Set.of("ratlantis"),
-                SpiritKind.EARTHEN, Set.of("bumblezone", "ratlantis"),
-                SpiritKind.INFERNAL, Set.of("nether"),
-                SpiritKind.TEMPO, Set.of("bumblezone"));
+                SpiritKind.POWER, Set.of("nether", "ratlantis"),
+                SpiritKind.MOTION, Set.of("aether", "bumblezone"),
+                SpiritKind.ENDURANCE, Set.of("ratlantis", "bumblezone"),
+                SpiritKind.RENEWAL, Set.of("aether", "bumblezone"),
+                SpiritKind.CONTROL, Set.of("nether"));
         for (SpiritKind kind : SpiritKind.values()) assertEquals(expected.get(kind), FontTradeAffinity.destinations(kind));
     }
 }

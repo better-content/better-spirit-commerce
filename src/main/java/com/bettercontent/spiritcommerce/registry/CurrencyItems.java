@@ -10,7 +10,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-/** Physical currency registry, deliberately separate from Malum's reagent item registry. */
+/** Five physical currencies that are themselves ordinary Malum SpiritShardItem reagents. */
 public final class CurrencyItems {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, BetterSpiritCommerce.MOD_ID);
     private static final Map<CurrencyIdentity, RegistryObject<Item>> ITEMS_BY_ID = new EnumMap<>(CurrencyIdentity.class);

@@ -24,6 +24,7 @@ public final class WanderingPool {
     public static List<Row> rows(final SpiritKind kind) { return ROWS.get(kind); }
     public static List<CommodityStock> commodityStocks() { return List.copyOf(DOCUMENT.commodityStocks()); }
     public static int rowCount() { return DOCUMENT.rows().size(); }
+    static Document sourceDocument() { return DOCUMENT; } // unchanged authored goods/prices for test validation
 
     private static Document load() {
         var stream = WanderingPool.class.getResourceAsStream(
@@ -69,15 +70,16 @@ public final class WanderingPool {
                 throw new IllegalArgumentException("Invalid matching campfire: " + row.id());
             }
         }
-        for (SpiritKind kind : SpiritKind.values()) {
-            List<Row> rows = document.rows().stream().filter(row -> row.kind() == kind).toList();
-            if (rows.size() != 36) throw new IllegalArgumentException("Expected 36 pool rows for " + kind);
+        // The previously authored eight stock templates retain their goods/prices;
+        // only their live payment/theme identity collapses to five.
+        for (String source : List.of("sacred", "wicked", "arcane", "aerial", "aqueous", "earthen", "infernal", "tempo")) {
+            List<Row> rows = document.rows().stream().filter(row -> row.spirit().equals(source)).toList();
+            if (rows.size() != 36) throw new IllegalArgumentException("Expected 36 pool rows for " + source);
             for (Bucket bucket : Bucket.values()) {
                 long count = rows.stream().filter(row -> row.bucket() == bucket).count();
                 if (count < bucket.picks() || (bucket == Bucket.STAPLE || bucket == Bucket.CAMPFIRE)
-                        && count != bucket.picks()) {
-                    throw new IllegalArgumentException("Invalid " + bucket + " capacity for " + kind);
-                }
+                        && count != bucket.picks())
+                    throw new IllegalArgumentException("Invalid " + bucket + " capacity for " + source);
             }
         }
     }
@@ -85,7 +87,21 @@ public final class WanderingPool {
     private static Map<SpiritKind, List<Row>> groupRows() {
         var result = new EnumMap<SpiritKind, List<Row>>(SpiritKind.class);
         for (SpiritKind kind : SpiritKind.values()) {
-            result.put(kind, DOCUMENT.rows().stream().filter(row -> row.kind() == kind).toList());
+            var rows = new java.util.ArrayList<Row>();
+            boolean campfireAdded = false;
+            for (Row row : DOCUMENT.rows()) {
+                if (row.kind() != kind) continue;
+                if (row.bucket() == Bucket.CAMPFIRE) {
+                    if (campfireAdded) continue; // one actual themed campfire, no duplicate output
+                    campfireAdded = true;
+                }
+                rows.add(new Row(row.id(), kind.id(), row.bucket(), row.cost(),
+                        row.bucket() == Bucket.CAMPFIRE
+                                ? new EconomyPolicy.StackSpec("better_spirit_commerce:" + kind.id() + "_campfire",
+                                        row.result().count())
+                                : row.result(), row.maxUses(), row.xp(), row.renewable()));
+            }
+            result.put(kind, List.copyOf(rows));
         }
         return Map.copyOf(result);
     }
@@ -102,7 +118,8 @@ public final class WanderingPool {
     public record Row(String id, String spirit, Bucket bucket, int cost, EconomyPolicy.StackSpec result,
                       int maxUses, int xp, boolean renewable) {
         public SpiritKind kind() {
-            for (SpiritKind kind : SpiritKind.values()) if (kind.id().equals(spirit)) return kind;
+            SpiritKind kind = SpiritKind.fromId(spirit);
+            if (kind != null) return kind;
             throw new IllegalArgumentException("Unknown pool theme: " + spirit);
         }
         public EconomyPolicy.WanderingRow trade() {

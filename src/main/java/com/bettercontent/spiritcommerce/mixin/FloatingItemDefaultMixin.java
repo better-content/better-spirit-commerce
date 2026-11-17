@@ -13,6 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 abstract class FloatingItemDefaultMixin {
     @Inject(method = "getDefaultItem", at = @At("HEAD"), cancellable = true)
     private void betterContentEconomy$defaultSpirit(CallbackInfoReturnable<Item> callback) {
-        callback.setReturnValue(CurrencyItems.item(CurrencyIdentity.WORK).get());
+        callback.setReturnValue(CurrencyItems.item(CurrencyIdentity.POWER).get());
     }
 }

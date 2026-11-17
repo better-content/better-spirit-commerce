@@ -2,8 +2,6 @@ package com.bettercontent.spiritcommerce.trader;
 
 import com.bettercontent.spiritcommerce.registry.SpiritProfessions;
 import com.bettercontent.spiritcommerce.spirit.SpiritKind;
-import com.bettercontent.spiritcommerce.resident.ResidentRules;
-import java.util.Comparator;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -12,7 +10,6 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
-import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
@@ -36,26 +33,22 @@ public final class ProfessionBehaviors {
     public static void onLivingTick(final LivingEvent.LivingTickEvent event) {
         if (!(event.getEntity() instanceof Villager villager)
                 || !(villager.level() instanceof ServerLevel level)
-                || villager.tickCount % INTERVAL != 0 || ResidentRules.isResident(villager)) return;
+                || villager.tickCount % INTERVAL != 0) return;
         SpiritKind kind = SpiritProfessions.kindOf(villager.getVillagerData().getProfession());
         if (kind == null || !isAtJobSite(villager, level)) return;
         replaceLegacyJobSite(villager, level, kind);
 
         switch (kind) {
-            case SACRED -> nearby(villager).stream()
+            case RENEWAL -> nearby(villager).stream()
                     .filter(entity -> !(entity instanceof Enemy) && entity.getHealth() < entity.getMaxHealth())
                     .limit(3).forEach(entity -> entity.heal(1.0F));
-            case WICKED -> nearby(villager).stream().filter(entity -> entity instanceof Enemy).limit(3)
+            case CONTROL -> nearby(villager).stream().filter(entity -> entity instanceof Enemy).limit(3)
                     .forEach(entity -> entity.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, 0)));
-            case ARCANE -> nearby(villager).stream().filter(entity -> entity instanceof Enemy).limit(3)
-                    .forEach(entity -> entity.addEffect(new MobEffectInstance(MobEffects.GLOWING, 160, 0)));
-            case AERIAL -> nearby(villager).stream().filter(entity -> !(entity instanceof Enemy)).limit(4)
+            case MOTION -> nearby(villager).stream().filter(entity -> !(entity instanceof Enemy)).limit(4)
                     .forEach(entity -> entity.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 120, 0)));
-            case AQUEOUS -> nearby(villager).stream().filter(LivingEntity::isOnFire).limit(4)
+            case ENDURANCE -> nearby(villager).stream().filter(LivingEntity::isOnFire).limit(4)
                     .forEach(LivingEntity::clearFire);
-            case EARTHEN -> nearby(villager).stream().filter(IronGolem.class::isInstance)
-                    .min(Comparator.comparingDouble(villager::distanceToSqr)).ifPresent(entity -> entity.heal(2.0F));
-            case INFERNAL -> accelerateFurnace(level, villager);
+            case POWER -> accelerateFurnace(level, villager);
         }
         level.sendParticles(ParticleTypes.ENCHANT, villager.getX(), villager.getY() + 1.4D, villager.getZ(),
                 4, 0.25D, 0.2D, 0.25D, 0.0D);

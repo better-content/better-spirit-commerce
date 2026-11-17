@@ -16,7 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 
 /** Legacy/acquisition/Doctor authority and facade onto the separately authored active wandering pool. */
 public final class EconomyPolicy {
-    public static final String SCHEMA = "bc.economy_policy.v4";
+    public static final String SCHEMA = "bc.economy_policy.v5";
     private static final Document DOCUMENT = load();
     private static final Set<ResourceLocation> RETIRED = DOCUMENT.retiredItems().stream()
             .map(ResourceLocation::new).collect(Collectors.toUnmodifiableSet());
@@ -52,17 +52,14 @@ public final class EconomyPolicy {
         if (document.legacyCurrencyMapping() == null || document.legacyCurrencyMapping().size() != 7) {
             throw new IllegalArgumentException("Economy policy must map the seven legacy native spirits once");
         }
-        for (CurrencyIdentity identity : CurrencyIdentity.values()) {
-            if (identity.legacyNativeSpirit() == null) continue;
-            String mapped = document.legacyCurrencyMapping().get(identity.legacyNativeSpirit().toString());
-            if (!identity.id().equals(mapped)) {
-                throw new IllegalArgumentException("Incorrect legacy currency mapping for " + identity.legacyNativeSpirit());
-            }
+        for (var entry : document.legacyCurrencyMapping().entrySet()) {
+            CurrencyIdentity identity = CurrencyIdentity.fromLegacyNativeSpirit(new ResourceLocation(entry.getKey()));
+            if (identity == null || !identity.id().equals(entry.getValue()))
+                throw new IllegalArgumentException("Incorrect native spirit mapping for " + entry.getKey());
         }
         if (document.acquisition() == null || !document.acquisition().creditedPlayerKillsOnly()
-                || !document.acquisition().excludeSpawnerOrigin() || !document.acquisition().excludeEconomyActors()
-                || document.acquisition().unmappedHostileSpiritCount() != 2) {
-            throw new IllegalArgumentException("Economy acquisition must be player-kill-only with two-spirit hostile fallback");
+                || !document.acquisition().excludeSpawnerOrigin() || !document.acquisition().excludeEconomyActors()) {
+            throw new IllegalArgumentException("Economy acquisition must be player-kill-only with the defined exclusions");
         }
         if (document.retiredItems() == null || document.retiredItems().size() != 24
                 || new HashSet<>(document.retiredItems()).size() != 24) {
@@ -77,20 +74,20 @@ public final class EconomyPolicy {
         if (document.plagueDoctorRows() == null || document.plagueDoctorRows().size() != 42) {
             throw new IllegalArgumentException("Economy policy must contain exactly 42 plague doctor oddities");
         }
-        for (SpiritKind spirit : SpiritKind.values()) {
-            if (spirit == SpiritKind.TEMPO) continue;
-            List<VillagerRow> villagers = document.villagerRows().stream().filter(row -> row.kind() == spirit).toList();
-            if (villagers.size() != 35) throw new IllegalArgumentException(spirit.id() + " must have 35 villager rows");
+        // Validate the unchanged seven-source stock templates separately from five
+        // live payment identities; no row, result, price or stock amount is rewritten.
+        for (String source : List.of("sacred", "wicked", "arcane", "aerial", "aqueous", "earthen", "infernal")) {
+            List<VillagerRow> villagers = document.villagerRows().stream().filter(row -> row.spirit().equals(source)).toList();
+            if (villagers.size() != 35) throw new IllegalArgumentException(source + " must have 35 villager rows");
             for (int level = 1; level <= 5; level++) {
                 final int currentLevel = level;
-                if (villagers.stream().filter(row -> row.level() == currentLevel).count() != 7) {
-                    throw new IllegalArgumentException(spirit.id() + " must have seven offers at level " + level);
-                }
+                if (villagers.stream().filter(row -> row.level() == currentLevel).count() != 7)
+                    throw new IllegalArgumentException(source + " must have seven offers at level " + level);
             }
-            List<WanderingRow> wanderers = document.wanderingRows().stream().filter(row -> row.kind() == spirit).toList();
-            if (wanderers.size() != 13) throw new IllegalArgumentException(spirit.id() + " must have 13 wandering goods");
-            List<PlagueDoctorRow> oddities = document.plagueDoctorRows().stream().filter(row -> row.kind() == spirit).toList();
-            if (oddities.size() != 6) throw new IllegalArgumentException(spirit.id() + " must have six plague doctor oddities");
+            if (document.wanderingRows().stream().filter(row -> row.spirit().equals(source)).count() != 13)
+                throw new IllegalArgumentException(source + " must have 13 wandering goods");
+            if (document.plagueDoctorRows().stream().filter(row -> row.spirit().equals(source)).count() != 6)
+                throw new IllegalArgumentException(source + " must have six plague doctor oddities");
         }
         document.villagerRows().forEach(EconomyPolicy::validateRow);
         document.wanderingRows().forEach(EconomyPolicy::validateRow);
@@ -122,8 +119,10 @@ public final class EconomyPolicy {
     private static Map<SpiritKind, List<VillagerRow>> groupVillagers() {
         Map<SpiritKind, List<VillagerRow>> rows = new EnumMap<>(SpiritKind.class);
         for (SpiritKind kind : SpiritKind.values()) {
-            rows.put(kind, kind == SpiritKind.TEMPO ? tempoVillagerRows()
-                    : DOCUMENT.villagerRows().stream().filter(row -> row.kind() == kind).toList());
+            var combined = new java.util.ArrayList<>(DOCUMENT.villagerRows().stream()
+                    .filter(row -> row.kind() == kind).toList());
+            if (kind == SpiritKind.MOTION) combined.addAll(tempoVillagerRows());
+            rows.put(kind, List.copyOf(combined));
         }
         return Map.copyOf(rows);
     }
@@ -139,21 +138,21 @@ public final class EconomyPolicy {
     private static List<VillagerRow> tempoVillagerRows() {
         String[] results = {"minecraft:clock", "minecraft:compass", "minecraft:repeater", "minecraft:comparator", "minecraft:redstone", "minecraft:redstone_torch", "minecraft:daylight_detector", "minecraft:observer", "minecraft:piston", "minecraft:sticky_piston", "minecraft:slime_ball", "minecraft:honey_bottle", "minecraft:sugar", "minecraft:rabbit_foot", "minecraft:feather", "minecraft:ender_pearl", "minecraft:chorus_fruit", "minecraft:firework_rocket", "minecraft:oak_boat", "minecraft:minecart", "minecraft:rail", "minecraft:powered_rail", "minecraft:detector_rail", "minecraft:activator_rail", "minecraft:tripwire_hook", "minecraft:lead", "minecraft:saddle", "minecraft:carrot_on_a_stick", "minecraft:warped_fungus_on_a_stick", "minecraft:map", "minecraft:recovery_compass", "minecraft:spyglass", "minecraft:lightning_rod", "minecraft:amethyst_shard", "minecraft:echo_shard"};
         java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger();
-        return DOCUMENT.villagerRows().stream().filter(row -> row.kind() == SpiritKind.ARCANE)
+        return DOCUMENT.villagerRows().stream().filter(row -> row.spirit().equals("arcane"))
                 .map(row -> new VillagerRow("tempo", row.level(), row.cost(),
                         new StackSpec(results[index.getAndIncrement()], row.result().count()), row.maxUses(), row.xp())).toList();
     }
     private static List<WanderingRow> tempoWanderingRows() {
         String[] results = {"minecraft:clock", "minecraft:repeater", "minecraft:comparator", "minecraft:observer", "minecraft:slime_ball", "minecraft:ender_pearl", "minecraft:chorus_fruit", "minecraft:firework_rocket", "minecraft:rail", "minecraft:powered_rail", "minecraft:lead", "minecraft:saddle", "minecraft:spyglass"};
         java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger();
-        return DOCUMENT.wanderingRows().stream().filter(row -> row.kind() == SpiritKind.ARCANE)
+        return DOCUMENT.wanderingRows().stream().filter(row -> row.spirit().equals("arcane"))
                 .map(row -> new WanderingRow("tempo", row.cost(),
                         new StackSpec(results[index.getAndIncrement()], row.result().count()), row.maxUses(), row.xp())).toList();
     }
     private static List<PlagueDoctorRow> tempoDoctorRows() {
         String[] results = {"minecraft:rabbit_foot", "minecraft:chorus_fruit", "minecraft:ender_pearl", "minecraft:echo_shard", "minecraft:recovery_compass", "minecraft:clock"};
         java.util.concurrent.atomic.AtomicInteger index = new java.util.concurrent.atomic.AtomicInteger();
-        return DOCUMENT.plagueDoctorRows().stream().filter(row -> row.kind() == SpiritKind.ARCANE)
+        return DOCUMENT.plagueDoctorRows().stream().filter(row -> row.spirit().equals("arcane"))
                 .map(row -> new PlagueDoctorRow("tempo", row.cost(),
                         new StackSpec(results[index.getAndIncrement()], 1), row.maxUses(), row.xp())).toList();
     }
@@ -167,7 +166,7 @@ public final class EconomyPolicy {
         default SpiritKind kind() { return SpiritKind.fromId(spirit()); }
     }
 
-    public record Acquisition(boolean creditedPlayerKillsOnly, int unmappedHostileSpiritCount,
+    public record Acquisition(boolean creditedPlayerKillsOnly,
                               boolean excludeSpawnerOrigin, boolean excludeEconomyActors) {}
     public record StackSpec(String id, int count) {}
     public record VillagerRow(String spirit, int level, int cost, StackSpec result, int maxUses, int xp)

@@ -35,7 +35,9 @@ public final class WanderingOfferSelector {
         for (Bucket bucket : List.of(Bucket.STAPLE, Bucket.SUPPLY, Bucket.EQUIPMENT, Bucket.STANDOUT)) {
             List<Row> candidates = new ArrayList<>(registered.stream()
                     .filter(row -> row.bucket() == bucket).toList());
-            if (bucket != Bucket.STAPLE) Collections.shuffle(candidates, random);
+            // A merged market has two prior staple templates. Sample all eight
+            // available goods; a one-source market keeps its original fixed four.
+            if (bucket != Bucket.STAPLE || candidates.size() > bucket.picks()) Collections.shuffle(candidates, random);
             for (Row row : candidates.stream().limit(bucket.picks()).toList()) {
                 result.add(row);
                 chosen.add(row.id());

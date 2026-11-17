@@ -99,7 +99,6 @@ minecraft {
         create("visualServer") {
             parent(baseServer)
             workingDirectory(project.file("run-visual-server"))
-            property("bettercontent.resident.debugSites", "true")
             mods { create("better_spirit_commerce_visual_harness") { source(visualHarness) } }
         }
         create("visualClient") {

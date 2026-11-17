@@ -44,14 +44,11 @@ public final class SpiritCampfires {
     public static Item item(SpiritKind kind) { return ITEMS.get(kind).get(); }
     public static int color(SpiritKind kind) {
         return switch (kind) {
-            case SACRED -> 0xF0E7CC;
-            case WICKED -> 0x9D78C4;
-            case ARCANE -> 0x757FE0;
-            case AERIAL -> 0x8EC9E8;
-            case AQUEOUS -> 0x54B9B1;
-            case EARTHEN -> 0xB9895F;
-            case INFERNAL -> 0xC75D4D;
-            case TEMPO -> 0xD8BE62;
+            case POWER -> 0xFF4055;
+            case MOTION -> 0xE0B01F;
+            case ENDURANCE -> 0x52606A;
+            case RENEWAL -> 0x6CCAF0;
+            case CONTROL -> 0x8E5BB7;
         };
     }
 }

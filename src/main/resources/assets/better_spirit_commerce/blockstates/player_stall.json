@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": {"model": "better_spirit_commerce:block/player_stall"},
-    "facing=east": {"model": "better_spirit_commerce:block/player_stall", "y": 90},
-    "facing=south": {"model": "better_spirit_commerce:block/player_stall", "y": 180},
-    "facing=west": {"model": "better_spirit_commerce:block/player_stall", "y": 270}
-  }
-}

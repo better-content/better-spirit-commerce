@@ -4,48 +4,42 @@ import com.bettercontent.spiritcommerce.BetterSpiritCommerce;
 import java.util.Locale;
 import net.minecraft.resources.ResourceLocation;
 
-/** Eight economy-owned currencies. Native Malum spirits remain crafting reagents. */
+/** Five physical economy spirits that are also actual native Malum crafting reagents. */
 public enum CurrencyIdentity {
-    IMPACT("malum:infernal_spirit"),
-    TEMPO(null),
-    WORK("malum:arcane_spirit"),
-    MOBILITY("malum:aerial_spirit"),
-    ENDURANCE("malum:aqueous_spirit"),
-    ROBUSTNESS("malum:earthen_spirit"),
-    RENEWAL("malum:sacred_spirit"),
-    CONTROL("malum:wicked_spirit");
+    POWER("infernal", "arcane"),
+    MOTION("aerial"),
+    ENDURANCE("aqueous", "earthen"),
+    RENEWAL("sacred"),
+    CONTROL("wicked");
 
-    private final ResourceLocation legacyNativeSpirit;
+    // Source compatibility only. These are NOT enum values, items, or distinct reagents.
+    @Deprecated public static final CurrencyIdentity IMPACT = POWER, WORK = POWER;
+    @Deprecated public static final CurrencyIdentity MOBILITY = MOTION, TEMPO = MOTION;
+    @Deprecated public static final CurrencyIdentity ROBUSTNESS = ENDURANCE;
 
-    CurrencyIdentity(final String legacyNativeSpirit) {
-        this.legacyNativeSpirit = legacyNativeSpirit == null ? null : new ResourceLocation(legacyNativeSpirit);
-    }
+    private final String[] nativeNames;
 
-    public String id() {
-        return name().toLowerCase(Locale.ROOT);
-    }
+    CurrencyIdentity(String... nativeNames) { this.nativeNames = nativeNames; }
+    public String id() { return name().toLowerCase(Locale.ROOT); }
+    public ResourceLocation itemId() { return new ResourceLocation(BetterSpiritCommerce.MOD_ID, id() + "_spirit"); }
 
-    public ResourceLocation itemId() {
-        return new ResourceLocation(BetterSpiritCommerce.MOD_ID, id() + "_spirit");
-    }
-
-    public ResourceLocation legacyNativeSpirit() {
-        return legacyNativeSpirit;
-    }
-
-    public static CurrencyIdentity fromLegacyNativeSpirit(final ResourceLocation id) {
-        if (id == null) return null;
-        for (CurrencyIdentity identity : values()) {
-            if (id.equals(identity.legacyNativeSpirit)) return identity;
-        }
+    /** Existing native keys are internal aliases, not separate player reagents. */
+    public static CurrencyIdentity fromNativeName(String name) {
+        if (name == null) return null;
+        for (CurrencyIdentity identity : values())
+            for (String nativeName : identity.nativeNames)
+                if (nativeName.equals(name)) return identity;
         return null;
     }
 
-    public static CurrencyIdentity fromItemId(final ResourceLocation id) {
+    public static CurrencyIdentity fromLegacyNativeSpirit(ResourceLocation id) {
+        if (id == null || !"malum".equals(id.getNamespace()) || !id.getPath().endsWith("_spirit")) return null;
+        return fromNativeName(id.getPath().substring(0, id.getPath().length() - "_spirit".length()));
+    }
+
+    public static CurrencyIdentity fromItemId(ResourceLocation id) {
         if (id == null) return null;
-        for (CurrencyIdentity identity : values()) {
-            if (id.equals(identity.itemId())) return identity;
-        }
+        for (CurrencyIdentity identity : values()) if (id.equals(identity.itemId())) return identity;
         return null;
     }
 }

@@ -52,12 +52,12 @@ final class SpiritCollectionHistoryTest {
     }
 
     @Test
-    void absentHistoryIsUniformAcrossAllEightTraders() {
+    void absentHistoryIsUniformAcrossFiveCoreTraderThemes() {
         SpiritCollectionHistory data = new SpiritCollectionHistory();
         RandomSource random = RandomSource.create(77123L);
         int[] counts = new int[WanderingTraderTheme.values().length];
         for (int i = 0; i < 80_000; i++) counts[data.selectTheme(PLAYER, 0, random).ordinal()]++;
-        for (int count : counts) assertEquals(10_000, count, 400);
+        for (int count : counts) assertEquals(16_000, count, 450);
     }
 
     @Test
@@ -67,10 +67,10 @@ final class SpiritCollectionHistoryTest {
         RandomSource random = RandomSource.create(12109L);
         int[] counts = new int[WanderingTraderTheme.values().length];
         for (int i = 0; i < 100_000; i++) counts[data.selectTheme(PLAYER, 0, random).ordinal()]++;
-        // 85% weighted + 15% / 8 uniform, not a 15% forced different visitor.
-        assertEquals(86_875, counts[WanderingTraderTheme.SACRED.ordinal()], 500);
+        // 85% weighted + 15% / 5 uniform, not a forced different visitor.
+        assertEquals(88_000, counts[WanderingTraderTheme.RENEWAL.ordinal()], 500);
         for (WanderingTraderTheme theme : WanderingTraderTheme.values()) {
-            if (theme != WanderingTraderTheme.SACRED) assertEquals(1_875, counts[theme.ordinal()], 250);
+            if (theme != WanderingTraderTheme.RENEWAL) assertEquals(3_000, counts[theme.ordinal()], 300);
         }
     }
 
@@ -80,15 +80,15 @@ final class SpiritCollectionHistoryTest {
         data.record(PLAYER, CurrencyIdentity.IMPACT, 100, 0);
         data.record(PLAYER, CurrencyIdentity.TEMPO, 1, 0);
         RandomSource random = RandomSource.create(9918L);
-        int infernal = 0;
-        int tempo = 0;
+        int power = 0;
+        int motion = 0;
         for (int i = 0; i < 100_000; i++) {
             WanderingTraderTheme theme = data.selectTheme(PLAYER, 0, random);
-            if (theme == WanderingTraderTheme.INFERNAL) infernal++;
-            if (theme == WanderingTraderTheme.TEMPO) tempo++;
+            if (theme == WanderingTraderTheme.POWER) power++;
+            if (theme == WanderingTraderTheme.MOTION) motion++;
         }
-        assertEquals(100_000 * (0.85 * 10 / 11 + 0.15 / 8), infernal, 500);
-        assertEquals(100_000 * (0.85 / 11 + 0.15 / 8), tempo, 500);
+        assertEquals(100_000 * (0.85 * 10 / 11 + 0.15 / 5), power, 500);
+        assertEquals(100_000 * (0.85 / 11 + 0.15 / 5), motion, 500);
     }
 
     @Test

@@ -1,4 +1,0 @@
-{
-  "type": "minecraft:block",
-  "pools": [{"rolls": 1, "entries": [{"type": "minecraft:item", "name": "better_spirit_commerce:player_stall"}]}]
-}

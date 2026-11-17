@@ -3,42 +3,31 @@ package com.bettercontent.spiritcommerce.spirit;
 import java.util.Locale;
 import net.minecraft.resources.ResourceLocation;
 
-/** Commerce themes. Tempo is the eighth economy identity and has no legacy Malum item. */
+/** Five live commerce themes. Old row labels are read-only catalogue aliases. */
 public enum SpiritKind {
-    SACRED,
-    WICKED,
-    ARCANE,
-    AERIAL,
-    AQUEOUS,
-    EARTHEN,
-    INFERNAL,
-    TEMPO;
+    POWER, MOTION, ENDURANCE, RENEWAL, CONTROL;
 
-    private static final SpiritKind[] VALUES = values();
-    private static final SpiritKind[] NATIVE_VALUES = {SACRED, WICKED, ARCANE, AERIAL, AQUEOUS, EARTHEN, INFERNAL};
+    // Internal source aliases for old fixture/call sites; values() remains five.
+    @Deprecated public static final SpiritKind SACRED = RENEWAL, WICKED = CONTROL;
+    @Deprecated public static final SpiritKind ARCANE = POWER, INFERNAL = POWER;
+    @Deprecated public static final SpiritKind AERIAL = MOTION, TEMPO = MOTION;
+    @Deprecated public static final SpiritKind AQUEOUS = ENDURANCE, EARTHEN = ENDURANCE;
 
-    public String id() {
-        return name().toLowerCase(Locale.ROOT);
-    }
+    public String id() { return name().toLowerCase(Locale.ROOT); }
+    public ResourceLocation itemId() { return currencyIdentity().itemId(); }
+    public CurrencyIdentity currencyIdentity() { return CurrencyIdentity.valueOf(name()); }
 
-    public ResourceLocation itemId() {
-        if (this == TEMPO) return CurrencyIdentity.TEMPO.itemId();
-        return new ResourceLocation("malum", id() + "_spirit");
-    }
-
-    public CurrencyIdentity currencyIdentity() {
-        return this == TEMPO ? CurrencyIdentity.TEMPO : CurrencyIdentity.fromLegacyNativeSpirit(itemId());
-    }
-
-    public static SpiritKind fromId(final String id) {
+    public static SpiritKind fromId(String id) {
         if (id == null) return null;
         String path = id.contains(":") ? id.substring(id.indexOf(':') + 1) : id;
         if (path.endsWith("_spirit")) path = path.substring(0, path.length() - 7);
-        for (SpiritKind kind : VALUES) if (kind.id().equals(path)) return kind;
+        CurrencyIdentity nativeIdentity = CurrencyIdentity.fromNativeName(path);
+        if (nativeIdentity != null) return valueOf(nativeIdentity.name());
+        // Prior Tempo stock is a Motion template; it does not mint a sixth spirit.
+        if (path.equals("tempo") || path.equals("mobility")) return MOTION;
+        if (path.equals("impact") || path.equals("work")) return POWER;
+        if (path.equals("robustness")) return ENDURANCE;
+        for (SpiritKind kind : values()) if (kind.id().equals(path)) return kind;
         return null;
-    }
-
-    public static SpiritKind fromIndex(final int index) {
-        return NATIVE_VALUES[Math.floorMod(index, NATIVE_VALUES.length)];
     }
 }

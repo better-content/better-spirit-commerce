@@ -82,7 +82,9 @@ public final class WanderingTraderScheduleData extends SavedData {
     /** Only the first identity is changed: no date, stock, retry or spawning rule bypass. */
     public void chooseFirst(String transaction, String currency) {
         if (transaction == null || transaction.isBlank()) throw new IllegalArgumentException("Empty founders transaction");
-        CurrencyIdentity identity = CurrencyIdentity.valueOf(currency.toUpperCase(java.util.Locale.ROOT));
+        var kind = com.bettercontent.spiritcommerce.spirit.SpiritKind.fromId(currency);
+        if (kind == null) throw new IllegalArgumentException("Unknown first trader currency " + currency);
+        CurrencyIdentity identity = kind.currencyIdentity();
         if (foundersTransaction.equals(transaction)) return;
         if (!foundersTransaction.isEmpty() || firstVisitCompleted || activeTraderId != null)
             throw new IllegalStateException("First trader visit already consumed");
@@ -106,10 +108,8 @@ public final class WanderingTraderScheduleData extends SavedData {
 
     public CurrencyIdentity nextCurrencyIdentity() {
         if (!firstCurrency.isEmpty()) return nextTheme().currencyIdentity();
-        for (CurrencyIdentity identity : CurrencyIdentity.values()) {
-            if (identity.id().equals(nextCurrencyIdentity)) return identity;
-        }
-        return nextTheme().currencyIdentity();
+        var kind = com.bettercontent.spiritcommerce.spirit.SpiritKind.fromId(nextCurrencyIdentity);
+        return kind == null ? nextTheme().currencyIdentity() : kind.currencyIdentity();
     }
 
     public UUID activeTraderId() {

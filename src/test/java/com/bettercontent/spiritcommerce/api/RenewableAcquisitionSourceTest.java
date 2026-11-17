@@ -10,43 +10,16 @@ class RenewableAcquisitionSourceTest {
     private static String source(String relative) throws Exception {
         return Files.readString(Path.of("src/main/java/com/bettercontent/spiritcommerce/"+relative));
     }
-    @Test void actualRegisteredResidentEndpointsReachGuardedProductionNotObsoleteVillagerCatalogue() throws Exception {
-        String main=source("BetterSpiritCommerce.java"), network=source("resident/ResidentNetwork.java");
-        assertTrue(main.contains("EVENT_BUS.register(ResidentService.class)"));
-        assertTrue(main.contains("EVENT_BUS.register(ResidentInteractions.class)"));
-        assertTrue(network.contains("ResidentBarter.offers(")); assertTrue(network.contains("ResidentBarter.execute("));
-        String barter=source("resident/ResidentBarter.java");
-        int gate=barter.indexOf("RenewableAcquisitionPolicy.commitIfAllowed(plan.generated()");
-        assertTrue(gate>=0 && gate<barter.indexOf("takePayment.getAsBoolean()"));
-        assertTrue(barter.contains("work.generated.add(remainder.copy())"));
-        assertTrue(barter.contains("work.generated.add(result.copy())"));
-    }
-    @Test void finiteStockBypassesProductionAndPlayerStockedStallCodeRemainsUnfiltered() throws Exception {
-        String barter=source("resident/ResidentBarter.java");
-        assertTrue(barter.contains("new Plan(stock, null, List.of(), List.of(),"));
-        for (String file : new String[]{"resident/ResidentState.java","resident/PlayerStallTrade.java","resident/PlayerStallBlockEntity.java"})
-            assertFalse(source(file).contains("RenewableAcquisitionPolicy"),file);
-        assertTrue(source("resident/PlayerStallTrade.java").contains("ResidentBarter.paymentPlan("));
-    }
-    @Test void sourceOutputVetoPrecedesCropWorldFuelWaterAndToolDebits() throws Exception {
-        String service=source("resident/ResidentService.java");
-        String crop=service.substring(service.indexOf("private static void harvestCrop"),service.indexOf("private static void harvestBlock"));
-        assertTrue(crop.indexOf("RenewableAcquisitionPolicy.allowsAll(drops)")<crop.indexOf("seed.shrink(1)"));
-        String block=service.substring(service.indexOf("private static void harvestBlock"),service.indexOf("private static void harvestTree"));
-        assertTrue(block.indexOf("RenewableAcquisitionPolicy.allowsAll(drops)")<block.indexOf("equipFor("));
-        assertTrue(block.indexOf("equipFor(")<block.indexOf("level.destroyBlock("));
-        String tree=service.substring(service.indexOf("private static void harvestTree"),service.indexOf("static boolean addGenerated"));
-        assertTrue(tree.contains("stagedDrops.stream().flatMap(List::stream)"));
-        assertTrue(tree.indexOf("stagedDrops.stream().flatMap(List::stream)")<tree.indexOf("equipFor("));
-        assertTrue(service.contains("if (!RenewableAcquisitionPolicy.allows(result)) return;\n                if (!state.remove(input.copyWithCount(1))"));
-        assertTrue(service.contains("if (!RenewableAcquisitionPolicy.allows(filled)) return false;\n            if (!state.remove(new ItemStack(Items.GLASS_BOTTLE)))"));
-    }
-    @Test void bothInitialResidentSeedOutletsUseGenerationGate() throws Exception {
-        String service=source("resident/ResidentService.java"), settlements=source("resident/SettlementGeneration.java");
-        assertTrue(service.contains("addGenerated(state, new ItemStack(Items.CARROT, 3))"));
-        assertTrue(service.contains("addGenerated(state, new ItemStack(Items.STONE_AXE))"));
-        assertTrue(settlements.contains("ResidentService.addGenerated(state, new ItemStack(Items.CARROT, 8))"));
-        assertTrue(settlements.contains("ResidentService.addGenerated(state, ResidentRules.waterBottle(3)"));
+    @Test void residentInterceptionIsRemovedButMerchantPolicyRemains() throws Exception {
+        String main=source("BetterSpiritCommerce.java");
+        assertFalse(main.contains("ResidentNetwork.register()"));
+        assertFalse(main.contains("PlayerStallRegistries.register("));
+        assertFalse(main.contains("SettlementGeneration.class"));
+        String merchant=source("mixin/AbstractVillagerMixin.java");
+        assertFalse(merchant.contains("ResidentRules"));
+        assertFalse(merchant.contains("offers.clear()"));
+        assertTrue(merchant.contains("MerchantCurrencyPolicy.normalize(offers);"));
+        assertTrue(merchant.contains("VillagerCatalogue.ensureFontOfferIfAvailable(villager, offers);"));
     }
     @Test void nativeMerchantOwnershipIsExplicitAndNoOwnerlessOfferMixinExists() throws Exception {
         String facade=source("api/RenewableAcquisitionPolicy.java");
@@ -65,9 +38,8 @@ class RenewableAcquisitionSourceTest {
         String main=source("mixin/AbstractVillagerMixin.java");
         int font=main.indexOf("ensureFontOfferIfAvailable("), finalGuard=main.lastIndexOf("offers.removeIf(");
         assertTrue(font>=0 && finalGuard>font);
-        int resident=main.indexOf("if (merchant instanceof Villager && ResidentRules.isResident(merchant)) {");
-        int normalize=main.indexOf("MerchantCurrencyPolicy.normalize(offers);");
-        assertTrue(resident>=0 && normalize>resident);
+        assertTrue(main.indexOf("MerchantCurrencyPolicy.normalize(offers);")>=0);
+        assertFalse(main.contains("ResidentRules"));
         String wandering=source("trader/WanderingTraderCatalogue.java");
         int selected=wandering.indexOf("List<Row> selected = selectedRows(trader, spirit);");
         int guard=wandering.indexOf("offers.removeIf(offer -> !RenewableAcquisitionPolicy.allowsMerchant(trader, offer.getResult()))");

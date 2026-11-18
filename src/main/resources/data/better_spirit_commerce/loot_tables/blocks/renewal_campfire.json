@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "better_spirit_commerce:tempo_campfire"
+          "name": "better_spirit_commerce:renewal_campfire"
         }
       ],
       "conditions": [

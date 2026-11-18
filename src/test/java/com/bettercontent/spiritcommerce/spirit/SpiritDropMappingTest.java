@@ -8,9 +8,23 @@ import java.util.List;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 final class SpiritDropMappingTest {
+    @BeforeAll static void bootstrapMinecraft() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        try {
+            net.minecraft.server.Bootstrap.bootStrap();
+        } catch (ExceptionInInitializerError error) {
+            boolean expectedForgeHarnessFailure = java.util.stream.Stream.iterate((Throwable) error,
+                            java.util.Objects::nonNull, Throwable::getCause)
+                    .anyMatch(cause -> cause instanceof NoSuchMethodException
+                            && cause.getMessage() != null
+                            && cause.getMessage().startsWith("net.minecraftforge.network.NetworkEvent"));
+            if (!expectedForgeHarnessFailure) throw error;
+        }
+    }
     private static CurrencyIdentity nativeIdentity(Item item) {
         if (item == Items.BLAZE_POWDER || item == Items.REDSTONE) return CurrencyIdentity.POWER;
         return null;

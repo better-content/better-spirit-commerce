@@ -19,15 +19,15 @@ final class WanderingTraderScheduleDataTest {
 
         assertFalse(schedule.isVisitDue(60_099L));
         assertTrue(schedule.isVisitDue(60_100L));
-        assertEquals(WanderingTraderTheme.SACRED, schedule.nextTheme());
-        assertEquals(CurrencyIdentity.RENEWAL, schedule.nextCurrencyIdentity());
+        assertEquals(WanderingTraderTheme.POWER, schedule.nextTheme());
+        assertEquals(CurrencyIdentity.POWER, schedule.nextCurrencyIdentity());
 
         final UUID traderId = UUID.fromString("00000000-0000-0000-0000-000000000019");
         schedule.completeVisit(60_100L, WanderingTraderVisits.MAX_INTERVAL_TICKS, traderId);
         assertEquals(168_100L, schedule.nextAttemptGameTime());
         assertEquals(traderId, schedule.activeTraderId());
-        assertEquals(WanderingTraderTheme.WICKED, schedule.nextTheme());
-        assertEquals(CurrencyIdentity.CONTROL, schedule.nextCurrencyIdentity());
+        assertEquals(WanderingTraderTheme.MOTION, schedule.nextTheme());
+        assertEquals(CurrencyIdentity.MOTION, schedule.nextCurrencyIdentity());
     }
 
     @Test
@@ -38,8 +38,8 @@ final class WanderingTraderScheduleDataTest {
 
         final WanderingTraderScheduleData loaded = WanderingTraderScheduleData.load(schedule.save(new CompoundTag()));
         assertEquals(49_200L, loaded.nextAttemptGameTime());
-        assertEquals(WanderingTraderTheme.SACRED, loaded.nextTheme());
-        assertEquals(CurrencyIdentity.RENEWAL, loaded.nextCurrencyIdentity());
+        assertEquals(WanderingTraderTheme.POWER, loaded.nextTheme());
+        assertEquals(CurrencyIdentity.POWER, loaded.nextCurrencyIdentity());
         assertNull(loaded.activeTraderId());
     }
 
@@ -71,11 +71,31 @@ final class WanderingTraderScheduleDataTest {
 
     @Test
     void themeCycleIsStable() {
-        assertEquals(WanderingTraderTheme.WICKED, WanderingTraderTheme.SACRED.next());
-        assertEquals(WanderingTraderTheme.ARCANE, WanderingTraderTheme.WICKED.next());
-        assertEquals(WanderingTraderTheme.AERIAL, WanderingTraderTheme.ARCANE.next());
-        assertEquals(WanderingTraderTheme.TEMPO, WanderingTraderTheme.INFERNAL.next());
-        assertEquals(WanderingTraderTheme.SACRED, WanderingTraderTheme.TEMPO.next());
+        assertEquals(WanderingTraderTheme.MOTION, WanderingTraderTheme.POWER.next());
+        assertEquals(WanderingTraderTheme.ENDURANCE, WanderingTraderTheme.MOTION.next());
+        assertEquals(WanderingTraderTheme.RENEWAL, WanderingTraderTheme.ENDURANCE.next());
+        assertEquals(WanderingTraderTheme.CONTROL, WanderingTraderTheme.RENEWAL.next());
+        assertEquals(WanderingTraderTheme.POWER, WanderingTraderTheme.CONTROL.next());
+    }
+
+    @Test
+    void schemaTwoSavedFirstOverrideAndNextThemeMigrateWithoutLosingIdentity() {
+        final CompoundTag legacy = new CompoundTag();
+        legacy.putInt("SchemaVersion", 2);
+        legacy.putInt("NextThemeIndex", 7); // tempo in the original eight-theme cycle
+        legacy.putString("NextCurrencyIdentity", "tempo");
+        legacy.putString("FirstCurrency", "work");
+        legacy.putString("FoundersTransaction", "old-visit");
+        legacy.putLong("NextAttemptGameTime", 48000);
+
+        var migrated = WanderingTraderScheduleData.load(legacy);
+        assertEquals(WanderingTraderTheme.POWER, migrated.nextTheme()); // pending first override
+        assertEquals(CurrencyIdentity.POWER, migrated.nextCurrencyIdentity());
+        var saved = migrated.save(new CompoundTag());
+        assertEquals("power", saved.getString("FirstCurrency"));
+        assertEquals("motion", saved.getString("NextCurrencyIdentity"));
+        assertEquals(1, saved.getInt("NextThemeIndex"));
+        assertEquals(48000, migrated.nextAttemptGameTime());
     }
 
     @Test
@@ -86,8 +106,8 @@ final class WanderingTraderScheduleDataTest {
 
         final WanderingTraderScheduleData migrated = WanderingTraderScheduleData.load(legacy);
 
-        assertEquals(WanderingTraderTheme.ARCANE, migrated.nextTheme());
-        assertEquals(CurrencyIdentity.WORK, migrated.nextCurrencyIdentity());
-        assertEquals("work", migrated.save(new CompoundTag()).getString("NextCurrencyIdentity"));
+        assertEquals(WanderingTraderTheme.POWER, migrated.nextTheme());
+        assertEquals(CurrencyIdentity.POWER, migrated.nextCurrencyIdentity());
+        assertEquals("power", migrated.save(new CompoundTag()).getString("NextCurrencyIdentity"));
     }
 }

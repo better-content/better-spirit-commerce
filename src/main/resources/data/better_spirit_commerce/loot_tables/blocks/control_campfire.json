@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "better_spirit_commerce:infernal_campfire"
+          "name": "better_spirit_commerce:control_campfire"
         }
       ],
       "conditions": [

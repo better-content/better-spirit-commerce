@@ -70,7 +70,7 @@ final class PinnedMalumRecipeSweepTest {
                 for (JsonElement spirit : raw.getAsJsonArray("spirits")) {
                     JsonObject row = spirit.getAsJsonObject();
                     String before = row.get("type").getAsString();
-                    expected.merge(ORDINARY.getOrDefault(before, before), row.get("count").getAsInt(), Math::addExact);
+                    expected.merge(ORDINARY.getOrDefault(before, before), row.has("count") ? row.get("count").getAsInt() : 1, Math::addExact);
                 }
                 Map<String, Integer> actual = new HashMap<>();
                 for (JsonElement spirit : mapped.getAsJsonArray("spirits")) {
@@ -81,9 +81,9 @@ final class PinnedMalumRecipeSweepTest {
                 assertEquals(expected, actual, "Convergent type counts and specialists: " + id);
             }
         }
-        assertEquals(138, inputRecipes, "Pinned native spirit-list inventory drift requires review");
+        assertEquals(153, inputRecipes, "Pinned native spirit-list inventory drift requires review");
         assertEquals(3, intentionallyRetired, "Three spirit-list equipment IDs retired by prior policy");
-        assertEquals(135, liveRecipes, "All other native spirit-list recipes must remain identified and loaded");
+        assertEquals(150, liveRecipes, "All other native spirit-list recipes must remain identified and loaded");
     }
 
     @Test void allTenPreviouslyRetiredNativeEquipmentRecipesRemainExplicitlyExcluded() throws Exception {

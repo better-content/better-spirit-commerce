@@ -13,7 +13,7 @@ public final class WanderingTraderScheduleData extends SavedData {
     private boolean initialized;
     private long nextAttemptGameTime;
     private int nextThemeIndex;
-    private String nextCurrencyIdentity = CurrencyIdentity.RENEWAL.id();
+    private String nextCurrencyIdentity = CurrencyIdentity.POWER.id();
     private UUID activeTraderId;
     private String foundersTransaction = "";
     private String firstCurrency = "";
@@ -29,14 +29,18 @@ public final class WanderingTraderScheduleData extends SavedData {
     public static WanderingTraderScheduleData load(final CompoundTag tag) {
         final WanderingTraderScheduleData data = new WanderingTraderScheduleData();
         data.foundersTransaction = tag.getString("FoundersTransaction");
-        data.firstCurrency = tag.getString("FirstCurrency");
+        data.firstCurrency = canonicalCurrency(tag.getString("FirstCurrency"));
         data.firstVisitCompleted = tag.getBoolean("FirstVisitCompleted");
         // v1/v2 timers were inactive under immediate admission; start a fresh bounded schedule.
         data.initialized = tag.getInt("SchemaVersion") >= SCHEMA_VERSION && tag.getBoolean("Initialized");
         data.nextAttemptGameTime = tag.getLong("NextAttemptGameTime");
-        data.nextThemeIndex = tag.getInt("NextThemeIndex");
+        int storedIndex = tag.getInt("NextThemeIndex");
+        // v1/v2 indices named the old eight-theme rotation. Preserve its next
+        // intended identity when moving to the five live themes on load.
+        data.nextThemeIndex = tag.getInt("SchemaVersion") < SCHEMA_VERSION
+                ? legacyTheme(storedIndex).ordinal() : storedIndex;
         if (tag.getInt("SchemaVersion") >= 2) {
-            data.nextCurrencyIdentity = tag.getString("NextCurrencyIdentity");
+            data.nextCurrencyIdentity = canonicalCurrency(tag.getString("NextCurrencyIdentity"));
         } else {
             data.nextCurrencyIdentity = WanderingTraderTheme.fromIndex(data.nextThemeIndex).currencyIdentity().id();
         }
@@ -44,6 +48,22 @@ public final class WanderingTraderScheduleData extends SavedData {
             data.activeTraderId = tag.getUUID("ActiveTrader");
         }
         return data;
+    }
+
+    private static String canonicalCurrency(String saved) {
+        if (saved.isEmpty()) return saved;
+        var kind = com.bettercontent.spiritcommerce.spirit.SpiritKind.fromId(saved);
+        return kind == null ? saved : kind.currencyIdentity().id();
+    }
+
+    private static WanderingTraderTheme legacyTheme(int index) {
+        return switch (Math.floorMod(index, 8)) {
+            case 0 -> WanderingTraderTheme.RENEWAL; // sacred
+            case 1 -> WanderingTraderTheme.CONTROL; // wicked
+            case 2, 6 -> WanderingTraderTheme.POWER; // arcane/infernal
+            case 3, 7 -> WanderingTraderTheme.MOTION; // aerial/tempo
+            default -> WanderingTraderTheme.ENDURANCE; // aqueous/earthen
+        };
     }
 
     @Override

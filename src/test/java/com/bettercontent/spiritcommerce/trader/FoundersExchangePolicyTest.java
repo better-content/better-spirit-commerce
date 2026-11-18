@@ -23,19 +23,19 @@ final class FoundersExchangePolicyTest {
             data.scheduleRetry(due, 1200);
             assertEquals(identity, data.nextTheme().currencyIdentity());
             data.completeVisit(due + 1200, 120000, UUID.randomUUID());
-            assertEquals(WanderingTraderTheme.WICKED, data.nextTheme());
-            assertEquals(CurrencyIdentity.CONTROL, data.nextCurrencyIdentity());
+            assertEquals(WanderingTraderTheme.MOTION, data.nextTheme());
+            assertEquals(CurrencyIdentity.MOTION, data.nextCurrencyIdentity());
             assertEquals(due + 121200, data.nextAttemptGameTime());
             data = WanderingTraderScheduleData.load(data.save(new CompoundTag()));
             data.chooseFirst("tx", identity.id());
-            assertEquals(CurrencyIdentity.CONTROL, data.nextCurrencyIdentity(), "Replay must not resurrect first override");
+            assertEquals(CurrencyIdentity.MOTION, data.nextCurrencyIdentity(), "Replay must not resurrect first override");
         }
     }
     @Test void invalidOrConflictingOverrideCannotMutateNativeSchedule() {
         WanderingTraderScheduleData data = new WanderingTraderScheduleData();
         data.initializeIfNeeded(0, 48000);
         assertThrows(IllegalArgumentException.class, () -> data.chooseFirst("tx", "not_currency"));
-        assertEquals(CurrencyIdentity.RENEWAL, data.nextCurrencyIdentity());
+        assertEquals(CurrencyIdentity.POWER, data.nextCurrencyIdentity());
         assertEquals(48000, data.nextAttemptGameTime());
         data.chooseFirst("tx", "impact");
         assertThrows(IllegalStateException.class, () -> data.chooseFirst("other", "tempo"));
@@ -44,8 +44,8 @@ final class FoundersExchangePolicyTest {
     @Test void ordinaryDisabledScheduleRemainsUnmodified() {
         WanderingTraderScheduleData data = new WanderingTraderScheduleData();
         data.initializeIfNeeded(0, 48000);
-        assertEquals(CurrencyIdentity.RENEWAL, data.nextCurrencyIdentity());
-        assertEquals(WanderingTraderTheme.SACRED, data.nextTheme());
+        assertEquals(CurrencyIdentity.POWER, data.nextCurrencyIdentity());
+        assertEquals(WanderingTraderTheme.POWER, data.nextTheme());
         assertEquals("", data.save(new CompoundTag()).getString("FoundersTransaction"));
     }
 }

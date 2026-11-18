@@ -62,14 +62,14 @@ final class NativeFixtureResourceTest {
     @Test
     void jeedDevDependencyMatchesCommittedPackPin() throws Exception {
         String packPin = Files.readString(Path.of("../../better-content-modpack/mods/just-enough-effect-descriptions-jeed.pw.toml"));
-        assertTrue(packPin.contains("file-id = 6172935") && packPin.contains("project-id = 532286")
-                && packPin.contains("9f6b1884ad8b81c0e8796daf7871eeb54271f27b"));
+        assertTrue(packPin.contains("file-id = 8761410") && packPin.contains("project-id = 532286")
+                && packPin.contains("c1bbf0193ba5cae59db7c273ebee26c4de37d7a9"));
         String build = Files.readString(Path.of("build.gradle.kts"));
-        assertTrue(build.contains("runtimeOnly(fg.deobf(\"curse.maven:jeed-532286:6172935\"))"));
+        assertTrue(build.contains("runtimeOnly(fg.deobf(\"curse.maven:jeed-532286:8761410\"))"));
         String jeiPin = Files.readString(Path.of("../../better-content-modpack/mods/jei.pw.toml"));
-        assertTrue(jeiPin.contains("file-id = 7920915") && jeiPin.contains("project-id = 238222")
-                && jeiPin.contains("1c51bf6df51ffbb1c5efe23780a7a3d053421f34"));
-        assertTrue(build.contains("runtimeOnly(fg.deobf(\"curse.maven:jei-238222:7920915\"))"));
+        assertTrue(jeiPin.contains("file-id = 9394360") && jeiPin.contains("project-id = 238222")
+                && jeiPin.contains("1ae408badfe8b57417f465a06fc4d03215dba993"));
+        assertTrue(build.contains("runtimeOnly(fg.deobf(\"curse.maven:jei-238222:9394360\"))"));
     }
 
     @Test

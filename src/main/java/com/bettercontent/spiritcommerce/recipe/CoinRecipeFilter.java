@@ -92,13 +92,15 @@ public final class CoinRecipeFilter {
         Map<String, JsonObject> totals = new LinkedHashMap<>();
         JsonArray result = new JsonArray();
         for (JsonElement input : inputs) {
-            if (!input.isJsonObject() || !input.getAsJsonObject().has("type")
-                    || !input.getAsJsonObject().has("count")) {
+            if (!input.isJsonObject() || !input.getAsJsonObject().has("type")) {
                 result.add(input.deepCopy());
                 continue;
             }
             JsonObject spirit = input.getAsJsonObject();
             String nativeName = spirit.get("type").getAsString();
+            // Malum's omitted count means one spirit; materialize that default before
+            // merging so single-count recipes cannot escape the grouping boundary.
+            int count = spirit.has("count") ? spirit.get("count").getAsInt() : 1;
             String grouped = switch (nativeName) {
                 case "infernal", "arcane" -> "infernal";
                 case "aerial" -> "aerial";
@@ -111,10 +113,11 @@ public final class CoinRecipeFilter {
             if (earlier == null) {
                 JsonObject canonical = spirit.deepCopy();
                 canonical.addProperty("type", grouped);
+                canonical.addProperty("count", count);
                 totals.put(grouped, canonical);
                 result.add(canonical);
             } else {
-                earlier.addProperty("count", Math.addExact(earlier.get("count").getAsInt(), spirit.get("count").getAsInt()));
+                earlier.addProperty("count", Math.addExact(earlier.get("count").getAsInt(), count));
             }
         }
         object.add("spirits", result);

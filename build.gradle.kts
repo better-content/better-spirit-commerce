@@ -93,7 +93,10 @@ minecraft {
             property("forge.enableGameTest", "true")
             property("forge.gameTestServer", "true")
             property("forge.enabledGameTestNamespaces", property("mod_id") as String)
-            mods { named(property("mod_id") as String) { source(nativeFixture) } }
+            mods { named(property("mod_id") as String) {
+                source(nativeFixture)
+                source(sourceSets.main.get())
+            } }
             arg("--nogui")
         }
         create("visualServer") {
@@ -256,8 +259,8 @@ dependencies {
     runtimeOnly(fg.deobf("curse.maven:malum-484064:6646111"))
     // Exact committed pack pin; Malum ships unconditional jeed:effect_provider recipes.
     // Dev/native runtime only, not a production Commerce dependency or bundled artifact.
-    runtimeOnly(fg.deobf("curse.maven:jeed-532286:6172935"))
-    runtimeOnly(fg.deobf("curse.maven:jei-238222:7920915"))
+    runtimeOnly(fg.deobf("curse.maven:jeed-532286:8761410"))
+    runtimeOnly(fg.deobf("curse.maven:jei-238222:9394360"))
     runtimeOnly(fg.deobf("curse.maven:rats-323596:5904296"))
     runtimeOnly(fg.deobf("curse.maven:citadel-331936:7476570"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")

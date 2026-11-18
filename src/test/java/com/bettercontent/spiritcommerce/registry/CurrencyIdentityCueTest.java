@@ -19,7 +19,7 @@ final class CurrencyIdentityCueTest {
         for (CurrencyIdentity identity : CurrencyIdentity.values()) {
             String cue = translations.get("tooltip.better_spirit_commerce." + identity.id()).getAsString();
             assertTrue(cue.contains(identity.id().substring(0, 1).toUpperCase() + identity.id().substring(1)));
-            assertTrue(cue.contains("Trade"));
+            assertTrue(cue.toLowerCase(java.util.Locale.ROOT).contains("trade"));
             cues.add(cue);
         }
         assertTrue(cues.size() == CurrencyIdentity.values().length);

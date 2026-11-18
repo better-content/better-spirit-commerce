@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "better_spirit_commerce:earthen_campfire"
+          "name": "better_spirit_commerce:power_campfire"
         }
       ],
       "conditions": [

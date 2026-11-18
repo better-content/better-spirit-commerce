@@ -171,18 +171,22 @@ public final class WanderingTraderVisits {
     private static void rollbackSpawn(ServerLevel level, ServerLevelData data, UUID previous,
                                       java.util.Set<UUID> before) {
         UUID id = data.getWanderingTraderId();
-        Entity entity = id == null || before.contains(id) ? null : level.getEntity(id);
-        if (entity instanceof WanderingTrader trader) {
-            // EntityLookup exposes a live fastutil values view. Discard synchronously removes from
-            // that lookup and can shift its hash cluster underneath the iterator, skipping a companion
-            // (or returning null). Finish discovery before mutating any native entity membership.
-            final var createdLlamas = new java.util.ArrayList<net.minecraft.world.entity.animal.horse.TraderLlama>();
-            for (Entity candidate : level.getAllEntities()) {
-                if (candidate instanceof net.minecraft.world.entity.animal.horse.TraderLlama llama
-                        && !before.contains(llama.getUUID())) createdLlamas.add(llama);
-            }
+        // Vanilla can insert a trader and companions without publishing its UUID
+        // when the spawn ultimately returns false. Use the pre-spawn entity snapshot
+        // instead of treating a null saved ID as proof that nothing was inserted.
+        // Finish discovery before mutating EntityLookup's live values view.
+        final var createdTraders = new java.util.ArrayList<WanderingTrader>();
+        final var createdLlamas = new java.util.ArrayList<net.minecraft.world.entity.animal.horse.TraderLlama>();
+        for (Entity candidate : level.getAllEntities()) {
+            if (before.contains(candidate.getUUID())) continue;
+            if (candidate instanceof WanderingTrader trader) createdTraders.add(trader);
+            if (candidate instanceof net.minecraft.world.entity.animal.horse.TraderLlama llama) createdLlamas.add(llama);
+        }
+        if (createdTraders.size() > 1 && (id == null || before.contains(id)))
+            throw new IllegalStateException("Ambiguous unpublished native trader rollback");
+        for (var trader : createdTraders) {
+            if (createdTraders.size() > 1 && !id.equals(trader.getUUID())) continue;
             for (var llama : createdLlamas) {
-                // Recheck ownership immediately before removal; discovery itself grants no ownership.
                 if (!llama.isTamed() && llama.getOwnerUUID() == null && llama.getLeashHolder() == trader) llama.discard();
             }
             TraderCampData.forTrader(trader).clear(trader.getUUID());

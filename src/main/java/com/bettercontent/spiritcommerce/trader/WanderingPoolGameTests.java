@@ -29,17 +29,21 @@ public final class WanderingPoolGameTests {
         // Vanilla + Create + Malum in the isolated native profile already provide 12 Work goods.
         helper.assertTrue(selected.size() == 13, "Registered Work pool did not fill 12 goods plus fire");
         var offers = trader.getOffers();
-        MerchantOffer torch = offers.stream().filter(o -> o.getResult().is(Items.TORCH)).findFirst().orElseThrow();
+        var goodId = new net.minecraft.resources.ResourceLocation(selected.stream()
+                .filter(row -> !row.result().id().endsWith("_campfire"))
+                .findFirst().orElseThrow().result().id());
+        var goodItem = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(goodId);
+        MerchantOffer good = offers.stream().filter(o -> o.getResult().is(goodItem)).findFirst().orElseThrow();
         MerchantOffer egg = offers.stream().filter(o -> o.getResult().is(Items.VILLAGER_SPAWN_EGG)).findFirst().orElseThrow();
-        torch.increaseUses(); egg.increaseUses();
+        good.increaseUses(); egg.increaseUses();
         trader.getOffers();
-        helper.assertTrue(offers.contains(torch) && torch.getUses() == 1 && egg.getUses() == 1,
+        helper.assertTrue(offers.contains(good) && good.getUses() == 1 && egg.getUses() == 1,
                 "Ordinary reopening reset or rebuilt valid offers");
         // An unrelated listing must not refill existing goods or the separate village starter.
         offers.add(new MerchantOffer(new ItemStack(CurrencyItems.item(CurrencyIdentity.WORK).get()),
                 new ItemStack(Items.BREAD), 1, 0, 0.0F));
         trader.getOffers();
-        helper.assertTrue(offers.stream().filter(o -> o.getResult().is(Items.TORCH)).findFirst().orElseThrow().getUses() == 1,
+        helper.assertTrue(offers.stream().filter(o -> o.getResult().is(goodItem)).findFirst().orElseThrow().getUses() == 1,
                 "Catalogue repair refilled an already-used good");
         helper.assertTrue(offers.stream().filter(o -> o.getResult().is(Items.VILLAGER_SPAWN_EGG)).findFirst().orElseThrow().getUses() == 1,
                 "Catalogue repair refilled the village starter");
@@ -52,7 +56,7 @@ public final class WanderingPoolGameTests {
         helper.assertTrue(selected.equals(WanderingTraderCatalogue.selectedRows(reloaded, SpiritKind.ARCANE)),
                 "Save/reload rerolled the basket");
         var restored = reloaded.getOffers();
-        helper.assertTrue(restored.stream().filter(o -> o.getResult().is(Items.TORCH)).findFirst().orElseThrow().getUses() == 1,
+        helper.assertTrue(restored.stream().filter(o -> o.getResult().is(goodItem)).findFirst().orElseThrow().getUses() == 1,
                 "Save/reload refilled the good");
         helper.assertTrue(restored.stream().filter(o -> o.getResult().is(Items.VILLAGER_SPAWN_EGG)).findFirst().orElseThrow().getUses() == 1,
                 "Save/reload refilled the village starter");

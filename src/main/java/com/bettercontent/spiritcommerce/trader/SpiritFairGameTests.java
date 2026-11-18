@@ -105,7 +105,7 @@ public final class SpiritFairGameTests {
                 net.minecraftforge.common.MinecraftForge.EVENT_BUS.unregister(insertion);
             }
             helper.assertTrue(SpiritFairData.get(level).successfulTrader() == null
-                            && SpiritFairData.get(level).nextTheme() == WanderingTraderTheme.SACRED
+                            && SpiritFairData.get(level).nextTheme() == WanderingTraderTheme.POWER
                             && !SpiritFairData.get(level).canAttempt(window.occurrence(), level.getGameTime() + 1199)
                             && SpiritFairData.get(level).canAttempt(window.occurrence(), level.getGameTime() + 1200)
                             && TraderCampData.fairTraderIds(level).isEmpty(),

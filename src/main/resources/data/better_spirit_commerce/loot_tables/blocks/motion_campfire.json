@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "better_spirit_commerce:arcane_campfire"
+          "name": "better_spirit_commerce:motion_campfire"
         }
       ],
       "conditions": [

@@ -31,7 +31,7 @@ final class SpiritFairDataTest {
         SpiritFairData restarted = SpiritFairData.load(data.save(new CompoundTag()));
         assertFalse(restarted.canAttempt(8, 1219));
         assertTrue(restarted.canAttempt(8, 1220));
-        assertEquals(WanderingTraderTheme.SACRED, restarted.nextTheme());
+        assertEquals(WanderingTraderTheme.POWER, restarted.nextTheme());
         assertNull(restarted.successfulTrader());
     }
 
@@ -43,18 +43,18 @@ final class SpiritFairDataTest {
         data.complete(previous);
         data.retryAfter(100);
         var canceled = data.admit(2);
-        assertEquals(WanderingTraderTheme.WICKED, data.nextTheme());
+        assertEquals(WanderingTraderTheme.MOTION, data.nextTheme());
         data.rollbackUnexposed(canceled);
         SpiritFairData restarted = SpiritFairData.load(data.save(new CompoundTag()));
         assertEquals(previous, restarted.successfulTrader());
         assertFalse(restarted.canAttempt(1, 1300));
         assertFalse(restarted.canAttempt(2, 1299));
         assertTrue(restarted.canAttempt(2, 1300));
-        assertEquals(WanderingTraderTheme.WICKED, restarted.nextTheme());
+        assertEquals(WanderingTraderTheme.MOTION, restarted.nextTheme());
         var successful = restarted.admit(2);
         restarted.complete(UUID.randomUUID());
         assertThrows(IllegalStateException.class, () -> restarted.rollbackUnexposed(successful));
-        assertEquals(WanderingTraderTheme.ARCANE, restarted.nextTheme());
+        assertEquals(WanderingTraderTheme.ENDURANCE, restarted.nextTheme());
     }
 
     @Test
@@ -66,7 +66,7 @@ final class SpiritFairDataTest {
             data.admit(1 + i * 11L);
             data.complete(UUID.randomUUID());
             data = SpiritFairData.load(data.save(new CompoundTag()));
-            assertEquals(WanderingTraderTheme.SACRED, ordinary.nextTheme());
+            assertEquals(WanderingTraderTheme.POWER, ordinary.nextTheme());
             assertNull(ordinary.activeTraderId());
         }
     }

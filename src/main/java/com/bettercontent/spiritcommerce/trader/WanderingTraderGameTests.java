@@ -316,8 +316,15 @@ public final class WanderingTraderGameTests {
         var actual = new java.util.EnumMap<CurrencyIdentity, Integer>(CurrencyIdentity.class);
         for (SpiritItemEntity spirit : spirits) {
             helper.assertTrue(player.getUUID().equals(spirit.ownerUUID), "Spirit must target the credited player");
-            CurrencyIdentity identity = CurrencyIdentity.fromItemId(ForgeRegistries.ITEMS.getKey(spirit.getItem().getItem()));
-            helper.assertTrue(identity != null, "Ordinary Malum spirit must use its matching commerce item");
+            var itemId = ForgeRegistries.ITEMS.getKey(spirit.getItem().getItem());
+            CurrencyIdentity identity = CurrencyIdentity.fromItemId(itemId);
+            if (identity == null) {
+                // Native Malum can release specialist/exotic stacks in parallel;
+                // they must remain native, not become ordinary currency.
+                helper.assertTrue(CurrencyIdentity.fromLegacyNativeSpirit(itemId) == null,
+                        "Ordinary Malum spirit escaped the commerce mapping: " + itemId);
+                continue;
+            }
             actual.merge(identity, spirit.getItem().getCount(), Integer::sum);
         }
         helper.assertTrue(actual.equals(expected), "Immediate drops must match Malum's mob types and counts: "

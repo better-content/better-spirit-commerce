@@ -39,6 +39,7 @@ public final class BetterSpiritCommerce {
         CurrencyItems.register(modBus);
         MinecraftForge.EVENT_BUS.register(WanderingTraderVisits.class);
         MinecraftForge.EVENT_BUS.register(WanderingTraderCatalogue.class);
+        MinecraftForge.EVENT_BUS.register(VillagerCatalogue.class);
         MinecraftForge.EVENT_BUS.register(SpiritAcquisition.class);
         MinecraftForge.EVENT_BUS.register(ProfessionBehaviors.class);
         MinecraftForge.EVENT_BUS.register(AuthoredTradeSignals.class);

@@ -1,5 +1,6 @@
 package com.bettercontent.spiritcommerce.trader;
 
+import com.bettercontent.spiritcommerce.api.RenewableAcquisitionPolicy;
 import com.bettercontent.spiritcommerce.config.EconomyPolicy;
 import com.bettercontent.spiritcommerce.registry.SpiritProfessions;
 import com.bettercontent.spiritcommerce.registry.CurrencyItems;
@@ -25,14 +26,19 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 
-/** Exactly thirty-five matching-spirit offers for each ordinary economy profession, plus Tempo's authored set. */
+/** Authored spirit offers for the five specialist villager professions. */
 public final class VillagerCatalogue {
     private VillagerCatalogue() {}
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void register(final VillagerTradesEvent event) {
         SpiritKind kind = SpiritProfessions.kindOf(event.getType());
-        replaceListings(kind, event.getTrades());
+        if (!replaceListings(kind, event.getTrades())) return;
+        // Vanilla rolls only two listings per level and does not retry a null
+        // offer. Do not let absent optional items or denied NPC outputs consume
+        // both draws and leave a specialist unable to trade.
+        event.getTrades().values().forEach(listings ->
+                listings.removeIf(listing -> listing instanceof SpiritListing authored && !authored.available()));
     }
 
     static boolean replaceListings(
@@ -66,12 +72,16 @@ public final class VillagerCatalogue {
         if (map != null) offers.add(map);
     }
     private record SpiritListing(SpiritKind kind, EconomyPolicy.VillagerRow row) implements VillagerTrades.ItemListing {
-        @Override public MerchantOffer getOffer(final Entity entity, final RandomSource random) {
-            Item spirit = CurrencyItems.item(kind.currencyIdentity()).get();
+        private boolean available() {
             Item result = item(row.result().id());
-            if (spirit == Items.AIR || result == Items.AIR) return null;
-            return new MerchantOffer(new ItemStack(spirit, row.cost()),
-                    new ItemStack(result, row.result().count()), row.maxUses(), row.xp(), 0.0F);
+            return CurrencyItems.item(kind.currencyIdentity()).get() != Items.AIR && result != Items.AIR
+                    && RenewableAcquisitionPolicy.allows(new ItemStack(result, row.result().count()));
+        }
+
+        @Override public MerchantOffer getOffer(final Entity entity, final RandomSource random) {
+            if (!available()) return null;
+            return new MerchantOffer(new ItemStack(CurrencyItems.item(kind.currencyIdentity()).get(), row.cost()),
+                    new ItemStack(item(row.result().id()), row.result().count()), row.maxUses(), row.xp(), 0.0F);
         }
     }
 

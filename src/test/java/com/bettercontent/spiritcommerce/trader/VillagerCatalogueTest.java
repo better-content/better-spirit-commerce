@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bettercontent.spiritcommerce.spirit.SpiritKind;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +15,13 @@ import net.minecraft.world.entity.npc.VillagerTrades;
 import org.junit.jupiter.api.Test;
 
 final class VillagerCatalogueTest {
+    @Test void forgeTradeEventHandlerIsRegisteredInProduction() throws Exception {
+        String entrypoint = Files.readString(Path.of(
+                "src/main/java/com/bettercontent/spiritcommerce/BetterSpiritCommerce.java"));
+        assertTrue(entrypoint.contains("MinecraftForge.EVENT_BUS.register(VillagerCatalogue.class);"),
+                "The catalogue listings do not reach villagers unless the Forge event handler is registered");
+    }
+
     @Test void catalogueHasThirtyFiveRowsForEverySpiritProfession() {
         assertEquals(280, VillagerCatalogue.rowCount());
         assertTrue(VillagerCatalogue.allRowsUseExactlyOneSpiritSide());

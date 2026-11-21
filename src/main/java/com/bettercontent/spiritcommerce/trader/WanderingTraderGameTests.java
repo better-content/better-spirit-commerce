@@ -5,6 +5,7 @@ import com.bettercontent.spiritcommerce.mixin.FloatingEntityAccessor;
 import com.bettercontent.spiritcommerce.registry.SpiritProfessions;
 import com.bettercontent.spiritcommerce.registry.CurrencyItems;
 import com.bettercontent.spiritcommerce.spirit.CurrencyIdentity;
+import com.bettercontent.spiritcommerce.spirit.SpiritKind;
 import com.sammy.malum.core.handlers.SpiritHarvestHandler;
 import com.mojang.authlib.GameProfile;
 import com.sammy.malum.common.entity.spirit.SpiritItemEntity;
@@ -22,6 +23,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Entity;
@@ -291,6 +293,53 @@ public final class WanderingTraderGameTests {
             }
             villager.discard();
         }
+        helper.succeed();
+    }
+
+    @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty", timeoutTicks = 100)
+    public static void everySpiritVillagerGetsNativeTradeListingsWithoutResettingSavedStock(final GameTestHelper helper) {
+        for (SpiritKind kind : SpiritKind.values()) {
+            Villager villager = EntityType.VILLAGER.create(helper.getLevel());
+            helper.assertTrue(villager != null, "Could not create a villager for " + kind);
+            villager.setVillagerData(villager.getVillagerData()
+                    .setProfession(SpiritProfessions.definition(kind).profession().get()));
+            MerchantOffers offers = villager.getOffers();
+            var nativeTrades = net.minecraft.world.entity.npc.VillagerTrades.TRADES.get(
+                    SpiritProfessions.definition(kind).profession().get());
+            helper.assertTrue(offers.size() == 2, "Missing registered native novice listings for " + kind
+                    + ": " + offers.size() + ", registered=" + (nativeTrades == null ? "null" : nativeTrades.keySet())
+                    + ", level1=" + (nativeTrades == null || nativeTrades.get(1) == null ? "null" : nativeTrades.get(1).length)
+                    + ", level=" + villager.getVillagerData().getLevel());
+            helper.assertTrue(offers.stream().allMatch(offer -> offer.getBaseCostA().is(
+                    CurrencyItems.item(kind.currencyIdentity()).get()) && offer.getCostB().isEmpty()
+                    && !offer.getResult().isEmpty()), "Villager did not sell for its matching spirit: " + kind);
+            MerchantOffer selected = offers.get(0);
+            selected.increaseUses();
+            CompoundTag saved = villager.saveWithoutId(new CompoundTag());
+            helper.assertTrue(saved.contains("Offers"), "Used specialist stock was not saved: " + kind);
+            Villager restored = EntityType.VILLAGER.create(helper.getLevel());
+            restored.load(saved);
+            helper.assertTrue(restored.getOffers().size() == 2 && restored.getOffers().get(0).getUses() == 1
+                    && ItemStack.isSameItemSameTags(selected.getResult(), restored.getOffers().get(0).getResult()),
+                    "Reopening a saved specialist rerolled offers or reset spent stock: " + kind);
+            villager.discard();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(templateNamespace = BetterSpiritCommerce.MOD_ID, template = "empty", timeoutTicks = 100)
+    public static void emptySpecialistFromPreviousVersionRecoversAfterSaveAndLoad(final GameTestHelper helper) {
+        Villager villager = EntityType.VILLAGER.create(helper.getLevel());
+        villager.setVillagerData(villager.getVillagerData()
+                .setProfession(SpiritProfessions.definition(SpiritKind.RENEWAL).profession().get()));
+        villager.setOffers(new MerchantOffers());
+        CompoundTag saved = villager.saveWithoutId(new CompoundTag());
+        helper.assertTrue(!saved.contains("Offers"), "Vanilla must not persist a wiped, empty offers list");
+        Villager restored = EntityType.VILLAGER.create(helper.getLevel());
+        restored.load(saved);
+        helper.assertTrue(restored.getOffers().size() == 2 && restored.getOffers().stream().allMatch(offer ->
+                offer.getBaseCostA().is(CurrencyItems.item(CurrencyIdentity.RENEWAL).get())),
+                "An empty saved specialist did not regenerate its native listings after restart");
         helper.succeed();
     }
 
